@@ -56,7 +56,10 @@ api.interceptors.response.use(
         processQueue(err as Error, null);
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/auth/login/?expired=1';
+
+        const ghPagesBasePath = '/Pag_Gmidei_frontend';
+        const basePath = window.location.pathname.startsWith(`${ghPagesBasePath}/`) ? ghPagesBasePath : '';
+        window.location.href = `${basePath}/auth/login/?expired=1`;
         return Promise.reject(err);
       } finally {
         isRefreshing = false;
