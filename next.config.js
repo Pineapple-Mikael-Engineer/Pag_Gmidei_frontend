@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const isGithubPages = process.env.GITHUB_ACTIONS === 'true';
-const repoName = 'Pag_Gmidei';
+const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] || 'Pag_Gmidei_frontend';
 
 const nextConfig = {
   reactStrictMode: true,
