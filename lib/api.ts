@@ -1,7 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
+export const API_URL = 'https://pag-gmidei-backend.onrender.com/api';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -53,10 +52,14 @@ api.interceptors.response.use(
         original.headers.Authorization = `Bearer ${data.accessToken}`;
         return api(original);
       } catch (err) {
+        console.error('Error refreshing auth token:', err);
         processQueue(err as Error, null);
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        window.location.href = `${BASE_PATH}/auth/login/?expired=1`;
+
+        const ghPagesBasePath = '/Pag_Gmidei_frontend';
+        const basePath = window.location.pathname.startsWith(`${ghPagesBasePath}/`) ? ghPagesBasePath : '';
+        window.location.href = `${basePath}/auth/login/?expired=1`;
         return Promise.reject(err);
       } finally {
         isRefreshing = false;
