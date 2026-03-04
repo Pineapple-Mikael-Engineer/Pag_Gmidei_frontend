@@ -32,6 +32,7 @@ export default function LoginPage() {
       setAuth(res.data.user, res.data.accessToken, res.data.refreshToken);
       router.push('/dashboard');
     } catch (err: any) {
+      console.error('Error during login:', err);
       setError(err.response?.data?.error || 'Error al iniciar sesión.');
     }
   };
