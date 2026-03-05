@@ -1,6 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 export const API_URL = 'https://pag-gmidei-backend.onrender.com/api';
+const GITHUB_PAGES_BASE_PATH = '/Pag_Gmidei_frontend';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -26,8 +27,10 @@ api.interceptors.response.use(
   res => res,
   async (error: AxiosError) => {
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const requestUrl = original.url ?? '';
+    const isAuthRoute = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout'].some((path) => requestUrl.includes(path));
 
-    if (error.response?.status === 401 && !original._retry) {
+    if (error.response?.status === 401 && !original._retry && !isAuthRoute) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -57,8 +60,8 @@ api.interceptors.response.use(
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
 
-        const ghPagesBasePath = '/Pag_Gmidei_frontend';
-        const basePath = window.location.pathname.startsWith(`${ghPagesBasePath}/`) ? ghPagesBasePath : '';
+        const isGitHubPages = window.location.hostname.endsWith('github.io');
+        const basePath = isGitHubPages ? GITHUB_PAGES_BASE_PATH : '';
         window.location.href = `${basePath}/auth/login/?expired=1`;
         return Promise.reject(err);
       } finally {
