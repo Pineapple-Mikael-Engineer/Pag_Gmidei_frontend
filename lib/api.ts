@@ -1,7 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
+export const API_URL = 'https://pag-gmidei-backend.onrender.com/api';
+const GITHUB_PAGES_BASE_PATH = '/Pag_Gmidei_frontend';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -27,8 +27,10 @@ api.interceptors.response.use(
   res => res,
   async (error: AxiosError) => {
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const requestUrl = original.url ?? '';
+    const isAuthRoute = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout'].some((path) => requestUrl.includes(path));
 
-    if (error.response?.status === 401 && !original._retry) {
+    if (error.response?.status === 401 && !original._retry && !isAuthRoute) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -53,10 +55,14 @@ api.interceptors.response.use(
         original.headers.Authorization = `Bearer ${data.accessToken}`;
         return api(original);
       } catch (err) {
+        console.error('Error refreshing auth token:', err);
         processQueue(err as Error, null);
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        window.location.href = `${BASE_PATH}/auth/login/?expired=1`;
+
+        const isGitHubPages = window.location.hostname.endsWith('github.io');
+        const basePath = isGitHubPages ? GITHUB_PAGES_BASE_PATH : '';
+        window.location.href = `${basePath}/auth/login/?expired=1`;
         return Promise.reject(err);
       } finally {
         isRefreshing = false;
