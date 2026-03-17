@@ -3,25 +3,22 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { reportsApi } from '../../../../lib/api';
+import { ReportApiModel, reportsApi } from '../../../../lib/api';
 import { formatPeruDateTime } from '../../../../lib/datetime';
 import ReportViewer from '../../../../components/reports/ReportViewer';
 import ReportEditor from '../../../../components/reports/ReportEditor';
 import CommentSection from '../../../../components/reports/CommentSection';
 import { useAuthStore } from '../../../../store/authStore';
 
-type ReportDetail = {
-  id: string;
-  title: string;
-  description: string;
-  reportDate: string;
-  updatedAt?: string;
-  comments?: string | null;
-  externalLinks?: string[];
-  author: { id: string; fullName: string };
-  subgroup?: { id: string; name: string; code: string };
-  attachments?: Array<{ id: string; originalName: string }>;
-};
+type ReportDetail = ReportApiModel;
+
+const editedKey = (id: string) => `report-edited-at:${id}`;
+
+function warningMessageFromResponse(payload: any): string {
+  const warning = payload?.warning || payload?.warnings?.[0];
+  if (!warning) return '';
+  return typeof warning === 'string' ? warning : warning.message || 'Se recibió una advertencia del backend.';
+}
 
 const editedKey = (id: string) => `report-edited-at:${id}`;
 
@@ -35,6 +32,7 @@ export default function ReportDetailPage() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [editing, setEditing] = useState(false);
   const [localEditedAt, setLocalEditedAt] = useState('');
+  const [warning, setWarning] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -86,6 +84,7 @@ export default function ReportDetailPage() {
       </Link>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {warning && <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">{warning}</p>}
 
       {!report ? (
         <p>No se encontró el reporte.</p>
@@ -116,28 +115,36 @@ export default function ReportDetailPage() {
                 initialMarkdown={report.description}
                 initialComments={report.comments || ''}
                 initialExternalLinks={report.externalLinks || []}
+                initialLinks={report.links || []}
                 submitLabel="Guardar cambios"
                 onSubmit={async ({ title, markdown, comments, externalLinks }) => {
                   setSavingEdit(true);
                   setError('');
+                  setWarning('');
                   const editedAt = new Date().toISOString();
                   try {
-                    await reportsApi.update(report.id, {
-                      title,
-                      markdown,
-                      comments,
-                      externalLinks,
-                    });
+                    const payload = { title, markdown, comments, externalLinks };
+                    const res = await reportsApi.replace(report.id, payload);
+                    const warn = warningMessageFromResponse(res.data);
+                    if (warn) setWarning(warn);
                   } catch {
-                    // fallback local si backend no soporta todos los campos
+                    try {
+                      await reportsApi.update(report.id, { title, markdown, comments, externalLinks });
+                    } catch {
+                      // fallback local
+                    }
                   } finally {
+                    const links = externalLinks.split(',').map((item) => item.trim()).filter(Boolean);
                     const updated: ReportDetail = {
                       ...report,
                       title,
                       description: markdown,
                       comments,
-                      externalLinks: externalLinks.split(',').map((item) => item.trim()).filter(Boolean),
+                      links,
+                      externalLinks: links,
+                      has_evidence: links.length > 0,
                       updatedAt: editedAt,
+                      edited: true,
                     };
                     setReport(updated);
                     if (typeof window !== 'undefined') {
@@ -150,7 +157,7 @@ export default function ReportDetailPage() {
                 }}
               />
             ) : (
-              <ReportViewer markdown={report.description} externalLinks={report.externalLinks || []} />
+              <ReportViewer markdown={report.description} externalLinks={report.externalLinks || []} links={report.links || []} hasEvidence={report.has_evidence} />
             )}
 
             {(report.attachments || []).length > 0 && (

@@ -2,6 +2,7 @@
 
 import { FormEvent, useMemo, useState } from 'react';
 import { buildReportMarkdown, parseEvidenceFromInput, parseReportMarkdown, ReportSections } from '../../lib/reportSections';
+import FileUploadField from './FileUploadField';
 
 type ReportEditorData = {
   title: string;
@@ -17,6 +18,7 @@ type Props = {
   initialMarkdown?: string;
   initialComments?: string;
   initialExternalLinks?: string[];
+  initialLinks?: string[];
   saving?: boolean;
   showFiles?: boolean;
   onSubmit: (payload: ReportEditorData) => Promise<void> | void;
@@ -36,6 +38,7 @@ export default function ReportEditor({
   initialMarkdown = '',
   initialComments = '',
   initialExternalLinks = [],
+  initialLinks = [],
   saving = false,
   showFiles = true,
   onSubmit,
@@ -46,7 +49,7 @@ export default function ReportEditor({
   const [title, setTitle] = useState(initialTitle);
   const [comments, setComments] = useState(initialComments);
   const [sections, setSections] = useState<ReportSections>(initialMarkdown ? parsed : emptySections);
-  const [externalLinks, setExternalLinks] = useState<string[]>(initialExternalLinks);
+  const [externalLinks, setExternalLinks] = useState<string[]>(Array.from(new Set([...initialExternalLinks, ...initialLinks])));
   const [newLink, setNewLink] = useState('');
   const [files, setFiles] = useState<FileList | null>(null);
 
@@ -120,6 +123,13 @@ export default function ReportEditor({
           ))}
         </div>
       </div>
+
+      <FileUploadField
+        onUploadedUrl={(url) => {
+          setExternalLinks((prev) => Array.from(new Set([...prev, url])));
+          setSections((prev) => ({ ...prev, evidencia: Array.from(new Set([...prev.evidencia, url])) }));
+        }}
+      />
 
       <div className="editor-section">
         <label className="editor-label">Comentarios adicionales</label>

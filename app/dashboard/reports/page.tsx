@@ -2,24 +2,16 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { GROUP_ROLE_LABELS, GroupRole } from '../../../lib/api';
+import { GROUP_ROLE_LABELS, GroupRole, ReportApiModel } from '../../../lib/api';
 import { reportsApi, subgroupsApi } from '../../../lib/api';
 import { useAuthStore } from '../../../store/authStore';
 import { formatPeruDateTime } from '../../../lib/datetime';
 import ReportEditor from '../../../components/reports/ReportEditor';
 import { parseReportMarkdown } from '../../../lib/reportSections';
 
-type ReportItem = {
-  id: string;
-  title: string;
-  description: string;
-  reportDate: string;
-  comments?: string | null;
-  subgroup?: { id: string; name: string; code: string };
-  author: { id: string; fullName: string; role?: GroupRole };
-  attachments: Array<{ id: string; originalName: string }>;
-  externalLinks?: string[];
+type ReportItem = ReportApiModel & {
   status?: 'EN_PROGRESO' | 'COMPLETADO' | 'REVISADO';
+  author: { id: string; fullName: string; role?: GroupRole };
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -28,12 +20,19 @@ const STATUS_LABELS: Record<string, string> = {
   REVISADO: 'Revisado',
 };
 
+function warningMessageFromResponse(payload: any): string {
+  const warning = payload?.warning || payload?.warnings?.[0];
+  if (!warning) return '';
+  return typeof warning === 'string' ? warning : warning.message || 'Se recibió una advertencia del backend.';
+}
+
 export default function ReportsPage() {
   const user = useAuthStore((s) => s.user);
   const [reports, setReports] = useState<ReportItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [warning, setWarning] = useState('');
 
   const [subgroupId, setSubgroupId] = useState('');
   const [mySubgroups, setMySubgroups] = useState<Array<{ subgroupId: string; subgroup?: { name?: string; code?: string } }>>([]);
@@ -100,11 +99,14 @@ export default function ReportsPage() {
           ))}
         </select>
 
+        {warning && <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">{warning}</p>}
+
         <ReportEditor
           saving={saving}
           onSubmit={async ({ title, markdown, comments, externalLinks, attachments }) => {
             setSaving(true);
             setError('');
+            setWarning('');
             try {
               const formData = new FormData();
               formData.append('title', title);
@@ -114,7 +116,9 @@ export default function ReportsPage() {
               if (!subgroupId) throw new Error('Selecciona subgrupo');
               formData.append('subgroupId', subgroupId);
               Array.from(attachments || []).forEach((f) => formData.append('attachments', f));
-              await reportsApi.create(formData);
+              const res = await reportsApi.create(formData);
+              const warn = warningMessageFromResponse(res.data);
+              if (warn) setWarning(warn);
               await loadReports();
             } catch (err: any) {
               setError(err.response?.data?.error || err.message || 'No se pudo crear el reporte.');
@@ -164,7 +168,8 @@ export default function ReportsPage() {
             {reports.length === 0 && <p className="text-slate-500">No hay reportes con esos filtros.</p>}
             {reports.map((r) => {
               const sections = parseReportMarkdown(r.description);
-              const hasEvidence = sections.evidencia.length > 0 || (r.externalLinks?.length || 0) > 0;
+              const hasEvidence = typeof r.has_evidence === 'boolean' ? r.has_evidence : ((r.links?.length || 0) > 0 || sections.evidencia.length > 0 || (r.externalLinks?.length || 0) > 0);
+              const attachmentCount = r.attachments?.length || 0;
               return (
                 <Link key={r.id} href={`/dashboard/reports/view?id=${r.id}`} className="timeline-card">
                   <div className="flex justify-between gap-3">
@@ -179,7 +184,7 @@ export default function ReportsPage() {
                       <p>{r.subgroup?.name || r.subgroup?.code || 'Subgrupo'}</p>
                       {r.status && <p>{STATUS_LABELS[r.status] || r.status}</p>}
                       <p className={hasEvidence ? 'text-emerald-700' : 'text-slate-400'}>{hasEvidence ? 'Con evidencia' : 'Sin evidencia'}</p>
-                      {(r.attachments?.length ?? 0) > 0 && <p className="text-blue-700">{r.attachments.length} adjunto(s)</p>}
+                      {attachmentCount > 0 && <p className="text-blue-700">{attachmentCount} adjunto(s)</p>}
                     </div>
                   </div>
                 </Link>
