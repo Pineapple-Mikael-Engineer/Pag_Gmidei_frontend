@@ -106,14 +106,61 @@ export const authApi = {
   logout: (refreshToken: string) => api.post('/auth/logout', { refreshToken }),
 };
 
+
+export type BackendWarning = {
+  message?: string;
+  code?: string;
+} | string;
+
+export interface ReportApiModel {
+  id: string;
+  title: string;
+  description: string;
+  reportDate: string;
+  comments?: string | null;
+  externalLinks?: string[];
+  links?: string[];
+  has_evidence?: boolean;
+  updatedAt?: string;
+  edited?: boolean;
+  previousContent?: string | null;
+  author: { id: string; fullName: string; role?: GroupRole };
+  subgroup?: { id: string; name: string; code: string };
+  attachments?: Array<{ id: string; originalName: string }>;
+}
+
+export interface CommentApiModel {
+  id: string;
+  reportId: string;
+  userId: string;
+  content: string;
+  createdAt: string;
+  editedAt?: string;
+  user?: { id: string; fullName?: string };
+}
+
 export const reportsApi = {
   getAll: (params?: { authorId?: string; subgroupId?: string; status?: string; q?: string; from?: string; to?: string; page?: number; limit?: number }) => api.get('/reports', { params }),
   getOne: (id: string) => api.get(`/reports/${id}`),
   create: (formData: FormData) => api.post('/reports', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   update: (id: string, data: object) => api.patch(`/reports/${id}`, data),
+  replace: (id: string, data: object) => api.put(`/reports/${id}`, data),
   delete: (id: string) => api.delete(`/reports/${id}`),
   downloadAttachment: (reportId: string, fileId: string) => api.get(`/reports/${reportId}/attachments/${fileId}`, { responseType: 'blob' }),
   downloadUrl: (reportId: string, fileId: string) => `${API_URL}/reports/${reportId}/attachments/${fileId}`,
+};
+
+export const commentsApi = {
+  create: (data: { reportId: string; content: string }) => api.post('/comments', data),
+  update: (commentId: string, data: { content: string }) => api.put(`/comments/${commentId}`, data),
+};
+
+export const uploadApi = {
+  send: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
 };
 
 export const calendarApi = {

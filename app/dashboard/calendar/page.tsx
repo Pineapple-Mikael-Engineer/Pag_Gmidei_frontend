@@ -92,19 +92,23 @@ export default function CalendarPage() {
   const selectedReports = grouped.get(selectedDate) || [];
 
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex flex-wrap gap-2 items-center justify-between">
+    <div className="page-shell space-y-6">
+      <div className="card bg-gradient-to-r from-white to-slate-50/80">
         <h1 className="text-2xl font-bold">Calendario de Reportes</h1>
+        <p className="text-sm text-slate-500">Vista mensual para navegar entregas por proyecto.</p>
+      </div>
+
+      <div className="flex flex-wrap gap-2 items-center justify-between">
         <div className="flex gap-2">
-          <button className="border px-3 py-2 rounded" onClick={() => setCursor((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}>Anterior</button>
-          <button className="border px-3 py-2 rounded" onClick={() => setCursor(new Date())}>Hoy</button>
-          <button className="border px-3 py-2 rounded" onClick={() => setCursor((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))}>Siguiente</button>
+          <button className="btn-secondary" onClick={() => setCursor((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}>Anterior</button>
+          <button className="btn-secondary" onClick={() => setCursor(new Date())}>Hoy</button>
+          <button className="btn-secondary" onClick={() => setCursor((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))}>Siguiente</button>
         </div>
       </div>
 
       <div className="flex gap-2 items-center">
         <label className="text-sm">Proyecto:</label>
-        <select className="border rounded p-2" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+        <select className="input" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
           {projects.map((p) => (
             <option key={p.subgroupId} value={p.subgroupId}>{p.subgroup?.name || p.subgroup?.code || p.subgroupId}</option>
           ))}
@@ -113,7 +117,7 @@ export default function CalendarPage() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <div className="bg-white border rounded-xl p-4">
+      <div className="card">
         <p className="text-sm text-gray-600 mb-3">{cursor.toLocaleDateString('es-PE', { month: 'long', year: 'numeric' })}</p>
         <div className="grid grid-cols-7 gap-2 text-xs text-gray-500 mb-2">
           {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((d) => <div key={d} className="text-center">{d}</div>)}
@@ -143,11 +147,11 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <div className="bg-white border rounded-xl divide-y">
+      <div className="card divide-y">
         <div className="p-4 font-semibold">Reportes del día {formatDateKey(selectedDate)}</div>
         {selectedReports.length === 0 && <p className="p-4 text-sm text-gray-500">No hay reportes en esta fecha.</p>}
         {selectedReports.map((r) => (
-          <Link key={r.id} href={`/dashboard/reports/view?id=${r.id}`} className="block p-4 hover:bg-gray-50">
+          <Link key={r.id} href={`/dashboard/reports/view?id=${r.id}`} className="block p-4 hover:bg-slate-50 transition">
             <p className="font-medium">{r.title}</p>
             <p className="text-xs text-gray-500">{r.author.fullName} · {r.subgroup?.name || r.subgroup?.code || 'Proyecto'}</p>
           </Link>
