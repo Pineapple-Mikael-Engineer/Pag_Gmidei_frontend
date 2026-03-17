@@ -71,32 +71,35 @@ export default function MembersPage() {
   }, [reports, selectedMemberId]);
 
   return (
-    <div className="p-8 space-y-4">
-      <h1 className="text-2xl font-bold">Miembros</h1>
+    <div className="page-shell space-y-4">
+      <div className="card bg-gradient-to-r from-white to-slate-50/80">
+        <h1 className="text-2xl font-bold">Miembros</h1>
+        <p className="text-sm text-slate-500">Seguimiento de integrantes y sus reportes por proyecto.</p>
+      </div>
 
       <div className="flex flex-wrap gap-2 items-center">
         <label className="text-sm">Proyecto:</label>
-        <select value={projectId} onChange={(e) => setProjectId(e.target.value)} className="border rounded p-2">
+        <select value={projectId} onChange={(e) => setProjectId(e.target.value)} className="input">
           {projects.map((p) => (
             <option key={p.subgroupId} value={p.subgroupId}>{p.subgroup?.name || p.subgroup?.code || p.subgroupId}</option>
           ))}
         </select>
 
         <label className="text-sm">Filtrar reportes por miembro:</label>
-        <select value={selectedMemberId} onChange={(e) => setSelectedMemberId(e.target.value)} className="border rounded p-2">
+        <select value={selectedMemberId} onChange={(e) => setSelectedMemberId(e.target.value)} className="input">
           <option value="">Todos</option>
           {members.map((m) => (
             <option key={m.userId} value={m.userId}>{m.user.fullName}</option>
           ))}
         </select>
 
-        <button className="border rounded px-3 py-2" onClick={() => loadProjectData()}>Actualizar</button>
+        <button className="btn-secondary" onClick={() => loadProjectData()}>Actualizar</button>
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="grid lg:grid-cols-2 gap-4">
-        <div className="bg-white border rounded-xl divide-y">
+        <div className="card divide-y">
           <div className="p-4 font-semibold">Miembros del proyecto</div>
           {members.length === 0 && <p className="p-4 text-gray-500">No hay miembros visibles.</p>}
           {members.map((m) => (
@@ -108,11 +111,11 @@ export default function MembersPage() {
           ))}
         </div>
 
-        <div className="bg-white border rounded-xl divide-y">
+        <div className="card divide-y">
           <div className="p-4 font-semibold">Reportes del proyecto{selectedMemberId ? ' (filtrados)' : ''}</div>
           {visibleReports.length === 0 && <p className="p-4 text-gray-500">No hay reportes para este filtro.</p>}
           {visibleReports.map((r) => (
-            <Link key={r.id} href={`/dashboard/reports/view?id=${r.id}`} className="block p-4 hover:bg-gray-50">
+            <Link key={r.id} href={`/dashboard/reports/view?id=${r.id}`} className="block p-4 hover:bg-slate-50 transition">
               <p className="font-medium">{r.title}</p>
               <p className="text-xs text-gray-500">{r.author.fullName} · {formatPeruDateTime(r.reportDate)} · {r.attachments?.length || 0} adj.</p>
             </Link>
