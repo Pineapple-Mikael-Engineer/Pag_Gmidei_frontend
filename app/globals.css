@@ -1,6 +1,145 @@
 @import "tailwindcss";
 
+:root {
+  --bg-base: #f2f1ed;
+  --ink: #1f2937;
+}
+
 html,
 body {
   height: 100%;
+  background:
+    radial-gradient(circle at 90% -10%, rgba(148, 163, 184, 0.16), transparent 35%),
+    radial-gradient(circle at 10% 10%, rgba(226, 232, 240, 0.4), transparent 30%),
+    var(--bg-base);
+  color: var(--ink);
+}
+
+.page-shell {
+  @apply p-6 md:p-8 max-w-6xl mx-auto;
+}
+
+.card {
+  @apply bg-white/95 border border-slate-200 rounded-2xl p-5 shadow-[0_10px_40px_-24px_rgba(15,23,42,0.65)] backdrop-blur-sm;
+}
+
+.report-editor {
+  @apply rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/70 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_14px_36px_-28px_rgba(15,23,42,0.8)];
+}
+
+.editor-section {
+  @apply rounded-xl border border-slate-200 bg-white/90 p-3;
+}
+
+.editor-label {
+  @apply text-xs uppercase tracking-wide font-semibold text-slate-500 mb-2 block;
+}
+
+.input {
+  @apply w-full border border-slate-300 rounded-xl p-2.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300/80 focus:border-slate-400;
+}
+
+.btn-primary {
+  @apply bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-700 transition shadow-sm;
+}
+
+.btn-secondary {
+  @apply border border-slate-300 px-4 py-2 rounded-xl text-slate-700 hover:bg-slate-50 transition;
+}
+
+.badge-muted {
+  @apply inline-flex px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-500;
+}
+
+.badge-ok {
+  @apply inline-flex px-2 py-1 rounded-full text-xs bg-emerald-100 text-emerald-700;
+}
+
+.badge-link {
+  @apply inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-700 border border-blue-200;
+}
+
+.timeline-card {
+  @apply block border border-slate-200 rounded-2xl p-4 hover:bg-white hover:border-slate-300 transition shadow-[0_8px_30px_-24px_rgba(15,23,42,0.6)] hover:shadow-[0_18px_40px_-26px_rgba(15,23,42,0.75)];
+}
+
+.report-markdown {
+  @apply space-y-3 text-slate-800;
+}
+
+.md-h1 { @apply text-3xl font-semibold mt-4; }
+.md-h2 { @apply text-xl font-semibold mt-5 pb-2 border-b border-slate-200 text-slate-900; }
+.md-h3 { @apply text-lg font-semibold mt-4 text-slate-800; }
+.md-p { @apply leading-7 text-slate-700; }
+.md-list { @apply list-disc pl-6 space-y-1 text-slate-700; }
+.md-list-ol { @apply list-decimal; }
+.md-code { @apply bg-slate-900 text-slate-50 p-3 rounded-xl overflow-x-auto text-sm; }
+.md-inline-code { @apply bg-slate-100 px-1 rounded text-sm; }
+.md-link { @apply text-blue-700 underline break-all; }
+.md-quote { @apply border-l-4 border-slate-300 pl-3 italic text-slate-600; }
+.md-check { @apply list-none -ml-5 flex items-center gap-2; }
+
+.md-alert {
+  @apply rounded-xl p-3 border;
+}
+.md-alert-title {
+  @apply font-semibold mb-1;
+}
+.md-alert-note {
+  @apply bg-blue-50 border-blue-200 text-blue-900;
+}
+.md-alert-warning {
+  @apply bg-amber-50 border-amber-200 text-amber-900;
+}
+.md-alert-tip {
+  @apply bg-emerald-50 border-emerald-200 text-emerald-900;
+}
+
+.evidence-card {
+  @apply block rounded-xl border border-slate-200 px-3 py-2 text-sm text-blue-700 hover:bg-blue-50 break-all bg-white;
+}
+
+.timeline {
+  @apply relative pl-4;
+}
+.timeline::before {
+  content: "";
+  @apply absolute left-1 top-1 bottom-1 w-px bg-slate-200;
+}
+
+.comment-bubble {
+  @apply relative p-3 rounded-xl border border-slate-200 bg-slate-50 ml-2;
+}
+.comment-bubble::before {
+  content: "";
+  @apply absolute -left-3 top-3 h-2.5 w-2.5 rounded-full bg-slate-300 ring-2 ring-white;
+}
+.comment-bubble.mine {
+  @apply bg-white border-slate-300;
+}
+.comment-bubble.mine::before {
+  @apply bg-emerald-400;
+}
+.comment-meta {
+  @apply text-xs text-slate-500 flex items-center justify-between mb-1;
+}
+
+.section-title {
+  @apply text-sm font-semibold tracking-wide uppercase text-slate-500 mb-2;
+}
+
+
+.auth-shell {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(59, 130, 246, 0.16), transparent 28%),
+    radial-gradient(circle at 80% 20%, rgba(129, 140, 248, 0.16), transparent 34%),
+    linear-gradient(130deg, #0f172a 0%, #1e293b 35%, #1e1b4b 100%);
+}
+
+.auth-card {
+  @apply rounded-3xl border border-white/20 bg-white/95 shadow-[0_30px_65px_-35px_rgba(15,23,42,0.95)] backdrop-blur-sm;
+}
+
+.auth-logo {
+  @apply rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg;
 }
