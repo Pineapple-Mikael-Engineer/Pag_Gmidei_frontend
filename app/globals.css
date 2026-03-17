@@ -1,26 +1,46 @@
 @import "tailwindcss";
 
+:root {
+  --bg-base: #f2f1ed;
+  --ink: #1f2937;
+}
+
 html,
 body {
   height: 100%;
-  background: #f4f4f1;
-  color: #1f2937;
+  background:
+    radial-gradient(circle at 90% -10%, rgba(148, 163, 184, 0.16), transparent 35%),
+    radial-gradient(circle at 10% 10%, rgba(226, 232, 240, 0.4), transparent 30%),
+    var(--bg-base);
+  color: var(--ink);
 }
 
 .page-shell {
-  @apply p-8 max-w-6xl mx-auto;
+  @apply p-6 md:p-8 max-w-6xl mx-auto;
 }
 
 .card {
-  @apply bg-white/95 border border-slate-200 rounded-2xl p-5 shadow-sm;
+  @apply bg-white/95 border border-slate-200 rounded-2xl p-5 shadow-[0_10px_40px_-24px_rgba(15,23,42,0.65)] backdrop-blur-sm;
+}
+
+.report-editor {
+  @apply rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/70 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_14px_36px_-28px_rgba(15,23,42,0.8)];
+}
+
+.editor-section {
+  @apply rounded-xl border border-slate-200 bg-white/90 p-3;
+}
+
+.editor-label {
+  @apply text-xs uppercase tracking-wide font-semibold text-slate-500 mb-2 block;
 }
 
 .input {
-  @apply w-full border border-slate-300 rounded-xl p-2.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300;
+  @apply w-full border border-slate-300 rounded-xl p-2.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300/80 focus:border-slate-400;
 }
 
 .btn-primary {
-  @apply bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-700 transition;
+  @apply bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-700 transition shadow-sm;
 }
 
 .btn-secondary {
@@ -40,7 +60,7 @@ body {
 }
 
 .timeline-card {
-  @apply block border border-slate-200 rounded-2xl p-4 hover:bg-slate-50 transition;
+  @apply block border border-slate-200 rounded-2xl p-4 hover:bg-white hover:border-slate-300 transition shadow-[0_8px_30px_-24px_rgba(15,23,42,0.6)] hover:shadow-[0_18px_40px_-26px_rgba(15,23,42,0.75)];
 }
 
 .report-markdown {
@@ -48,8 +68,8 @@ body {
 }
 
 .md-h1 { @apply text-3xl font-semibold mt-4; }
-.md-h2 { @apply text-2xl font-semibold mt-4 pb-1 border-b border-slate-200; }
-.md-h3 { @apply text-xl font-semibold mt-3; }
+.md-h2 { @apply text-xl font-semibold mt-5 pb-2 border-b border-slate-200 text-slate-900; }
+.md-h3 { @apply text-lg font-semibold mt-4 text-slate-800; }
 .md-p { @apply leading-7 text-slate-700; }
 .md-list { @apply list-disc pl-6 space-y-1 text-slate-700; }
 .md-list-ol { @apply list-decimal; }
@@ -76,15 +96,34 @@ body {
 }
 
 .evidence-card {
-  @apply block rounded-xl border border-slate-200 px-3 py-2 text-sm text-blue-700 hover:bg-blue-50 break-all;
+  @apply block rounded-xl border border-slate-200 px-3 py-2 text-sm text-blue-700 hover:bg-blue-50 break-all bg-white;
+}
+
+.timeline {
+  @apply relative pl-4;
+}
+.timeline::before {
+  content: "";
+  @apply absolute left-1 top-1 bottom-1 w-px bg-slate-200;
 }
 
 .comment-bubble {
-  @apply p-3 rounded-xl border border-slate-200 bg-slate-50;
+  @apply relative p-3 rounded-xl border border-slate-200 bg-slate-50 ml-2;
+}
+.comment-bubble::before {
+  content: "";
+  @apply absolute -left-3 top-3 h-2.5 w-2.5 rounded-full bg-slate-300 ring-2 ring-white;
 }
 .comment-bubble.mine {
   @apply bg-white border-slate-300;
 }
+.comment-bubble.mine::before {
+  @apply bg-emerald-400;
+}
 .comment-meta {
   @apply text-xs text-slate-500 flex items-center justify-between mb-1;
+}
+
+.section-title {
+  @apply text-sm font-semibold tracking-wide uppercase text-slate-500 mb-2;
 }

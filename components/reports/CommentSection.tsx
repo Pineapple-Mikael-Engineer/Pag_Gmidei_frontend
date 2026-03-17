@@ -82,7 +82,7 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
         })}
       </div>
 
-      <form onSubmit={onSubmit} className="flex gap-2">
+      <form onSubmit={onSubmit} className="grid gap-2 md:grid-cols-[1fr_auto]">
         <textarea
           className="input min-h-20"
           placeholder="Escribe un comentario..."

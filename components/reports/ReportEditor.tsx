@@ -78,22 +78,34 @@ export default function ReportEditor({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="card space-y-4">
+    <form onSubmit={handleSubmit} className="report-editor space-y-5">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold text-slate-900">{mode === 'edit' ? 'Editar reporte' : 'Nuevo reporte'}</h2>
         <p className="text-sm text-slate-500">Formato guiado por bloques para mantener consistencia.</p>
       </div>
 
-      <input className="input" placeholder="Título" value={title} onChange={(e) => setTitle(e.target.value)} required />
-
-      <div className="space-y-3">
-        <textarea className="input min-h-28" placeholder="Avance" value={sections.avance} onChange={(e) => setSections((prev) => ({ ...prev, avance: e.target.value }))} />
-        <textarea className="input min-h-24" placeholder="Problemas" value={sections.problemas} onChange={(e) => setSections((prev) => ({ ...prev, problemas: e.target.value }))} />
-        <textarea className="input min-h-24" placeholder="Siguiente paso" value={sections.siguientePaso} onChange={(e) => setSections((prev) => ({ ...prev, siguientePaso: e.target.value }))} />
+      <div className="editor-section">
+        <label className="editor-label">Título del reporte</label>
+        <input className="input" placeholder="Título" value={title} onChange={(e) => setTitle(e.target.value)} required />
       </div>
 
-      <div className="space-y-2">
-        <p className="text-sm font-medium text-slate-700">Evidencia (links)</p>
+      <div className="space-y-3">
+        <div className="editor-section">
+          <label className="editor-label">Avance</label>
+          <textarea className="input min-h-28" placeholder="Describe el progreso de hoy..." value={sections.avance} onChange={(e) => setSections((prev) => ({ ...prev, avance: e.target.value }))} />
+        </div>
+        <div className="editor-section">
+          <label className="editor-label">Problemas</label>
+          <textarea className="input min-h-24" placeholder="Bloqueos o riesgos identificados..." value={sections.problemas} onChange={(e) => setSections((prev) => ({ ...prev, problemas: e.target.value }))} />
+        </div>
+        <div className="editor-section">
+          <label className="editor-label">Siguiente paso</label>
+          <textarea className="input min-h-24" placeholder="¿Cuál es la siguiente acción concreta?" value={sections.siguientePaso} onChange={(e) => setSections((prev) => ({ ...prev, siguientePaso: e.target.value }))} />
+        </div>
+      </div>
+
+      <div className="editor-section space-y-2">
+        <p className="editor-label">Evidencia (links)</p>
         <div className="flex gap-2">
           <input className="input" placeholder="https://..." value={newLink} onChange={(e) => setNewLink(e.target.value)} />
           <button type="button" className="btn-secondary" onClick={addLink}>Agregar</button>
@@ -109,7 +121,10 @@ export default function ReportEditor({
         </div>
       </div>
 
-      <input className="input" placeholder="Comentarios adicionales" value={comments} onChange={(e) => setComments(e.target.value)} />
+      <div className="editor-section">
+        <label className="editor-label">Comentarios adicionales</label>
+        <input className="input" placeholder="Notas breves para revisión" value={comments} onChange={(e) => setComments(e.target.value)} />
+      </div>
 
       {showFiles && <input type="file" multiple onChange={(e) => setFiles(e.target.files)} className="input" />}
 

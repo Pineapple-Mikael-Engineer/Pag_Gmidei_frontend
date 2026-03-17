@@ -16,9 +16,11 @@ export default function ReportViewer({ markdown, externalLinks = [] }: Props) {
 
   return (
     <div className="space-y-5">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.8)]">
       <div className="report-markdown" dangerouslySetInnerHTML={{ __html: html }} />
+      </div>
 
-      <div className="border-t pt-4">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-slate-700">Evidencia</p>
           <span className={hasEvidence ? 'badge-ok' : 'badge-muted'}>{hasEvidence ? 'Con evidencia' : 'Sin evidencia'}</span>

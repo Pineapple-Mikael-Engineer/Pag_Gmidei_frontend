@@ -85,9 +85,12 @@ export default function ReportsPage() {
 
   return (
     <div className="page-shell space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Sistema de reportes</h1>
-
+      <div className="card bg-gradient-to-r from-white to-slate-50/80">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Sistema de reportes</h1>
+        <p className="text-sm text-slate-500 mt-1">Visualización tipo timeline, edición rápida y reportes guiados por bloques.</p>
+      </div>
       <div className="card space-y-3">
+        <p className="section-title">Creación de reporte</p>
         <label className="text-sm text-slate-600">Proyecto</label>
         <select className="input" value={subgroupId} onChange={(e) => setSubgroupId(e.target.value)}>
           {mySubgroups.map((m) => (
@@ -123,6 +126,7 @@ export default function ReportsPage() {
       </div>
 
       <div className="card">
+        <p className="section-title">Timeline de reportes</p>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
           <input value={search} onChange={(e) => setSearch(e.target.value)} className="input lg:col-span-2" placeholder="Buscar por título o contenido" />
           <select value={filterSubgroupId} onChange={(e) => setFilterSubgroupId(e.target.value)} className="input">

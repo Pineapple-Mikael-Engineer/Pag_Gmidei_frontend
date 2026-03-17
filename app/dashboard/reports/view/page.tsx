@@ -77,6 +77,10 @@ export default function ReportDetailPage() {
 
   return (
     <div className="page-shell space-y-6">
+      <div className="card bg-gradient-to-r from-white to-slate-50/80">
+        <p className="section-title">Detalle de reporte</p>
+        <p className="text-sm text-slate-500">Vista enriquecida con markdown mejorado, evidencia y comentarios tipo timeline.</p>
+      </div>
       <Link href="/dashboard/reports" className="text-blue-600 hover:underline text-sm">
         ← Volver a reportes
       </Link>
@@ -87,7 +91,7 @@ export default function ReportDetailPage() {
         <p>No se encontró el reporte.</p>
       ) : (
         <>
-          <div className="card space-y-5">
+          <div className="card space-y-5 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.9)]">
             <div className="flex justify-between gap-3">
               <div>
                 <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{report.title}</h1>
