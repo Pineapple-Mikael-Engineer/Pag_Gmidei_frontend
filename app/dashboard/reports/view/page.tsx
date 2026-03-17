@@ -20,6 +20,8 @@ function warningMessageFromResponse(payload: any): string {
   return typeof warning === 'string' ? warning : warning.message || 'Se recibió una advertencia del backend.';
 }
 
+const editedKey = (id: string) => `report-edited-at:${id}`;
+
 export default function ReportDetailPage() {
   const searchParams = useSearchParams();
   const reportId = searchParams.get('id') || '';
