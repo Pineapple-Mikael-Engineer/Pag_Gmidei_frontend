@@ -12,15 +12,13 @@ import { useAuthStore } from '../../../../store/authStore';
 
 type ReportDetail = ReportApiModel;
 
-const editedKey = (id: string) => `report-edited-at:${id}`;
+const getEditedStorageKey = (id: string) => `report-edited-at:${id}`;
 
 function warningMessageFromResponse(payload: any): string {
   const warning = payload?.warning || payload?.warnings?.[0];
   if (!warning) return '';
   return typeof warning === 'string' ? warning : warning.message || 'Se recibió una advertencia del backend.';
 }
-
-const editedKey = (id: string) => `report-edited-at:${id}`;
 
 export default function ReportDetailPage() {
   const searchParams = useSearchParams();
@@ -34,6 +32,8 @@ export default function ReportDetailPage() {
   const [localEditedAt, setLocalEditedAt] = useState('');
   const [warning, setWarning] = useState('');
   const [error, setError] = useState('');
+
+  const canEdit = !!report && !!user && (user.isGodAdmin || user.id === report.author.id);
 
   useEffect(() => {
     if (!reportId) {
@@ -50,7 +50,7 @@ export default function ReportDetailPage() {
       .finally(() => setLoading(false));
 
     if (typeof window !== 'undefined') {
-      setLocalEditedAt(localStorage.getItem(editedKey(reportId)) || '');
+      setLocalEditedAt(localStorage.getItem(getEditedStorageKey(reportId)) || '');
     }
   }, [reportId]);
 
@@ -101,12 +101,16 @@ export default function ReportDetailPage() {
                   <p className="text-xs text-slate-400 mt-1">Editado el: {formatPeruDateTime(report.updatedAt || localEditedAt)}</p>
                 )}
               </div>
-              <button className="btn-secondary h-fit" onClick={() => setEditing((prev) => !prev)}>
-                {editing ? 'Cancelar' : 'Editar reporte'}
-              </button>
+              {canEdit ? (
+                <button className="btn-secondary h-fit" onClick={() => setEditing((prev) => !prev)}>
+                  {editing ? 'Cancelar' : 'Editar reporte'}
+                </button>
+              ) : (
+                <span className="badge-muted h-fit">Solo el autor o admin puede editar</span>
+              )}
             </div>
 
-            {editing ? (
+            {editing && canEdit ? (
               <ReportEditor
                 mode="edit"
                 showFiles={false}
@@ -118,6 +122,10 @@ export default function ReportDetailPage() {
                 initialLinks={report.links || []}
                 submitLabel="Guardar cambios"
                 onSubmit={async ({ title, markdown, comments, externalLinks }) => {
+                  if (!canEdit) {
+                    setError('No tienes permisos para editar este reporte.');
+                    return;
+                  }
                   setSavingEdit(true);
                   setError('');
                   setWarning('');
@@ -148,7 +156,7 @@ export default function ReportDetailPage() {
                     };
                     setReport(updated);
                     if (typeof window !== 'undefined') {
-                      localStorage.setItem(editedKey(report.id), editedAt);
+                      localStorage.setItem(getEditedStorageKey(report.id), editedAt);
                     }
                     setLocalEditedAt(editedAt);
                     setEditing(false);
