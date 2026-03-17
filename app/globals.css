@@ -3,4 +3,88 @@
 html,
 body {
   height: 100%;
+  background: #f4f4f1;
+  color: #1f2937;
+}
+
+.page-shell {
+  @apply p-8 max-w-6xl mx-auto;
+}
+
+.card {
+  @apply bg-white/95 border border-slate-200 rounded-2xl p-5 shadow-sm;
+}
+
+.input {
+  @apply w-full border border-slate-300 rounded-xl p-2.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300;
+}
+
+.btn-primary {
+  @apply bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-700 transition;
+}
+
+.btn-secondary {
+  @apply border border-slate-300 px-4 py-2 rounded-xl text-slate-700 hover:bg-slate-50 transition;
+}
+
+.badge-muted {
+  @apply inline-flex px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-500;
+}
+
+.badge-ok {
+  @apply inline-flex px-2 py-1 rounded-full text-xs bg-emerald-100 text-emerald-700;
+}
+
+.badge-link {
+  @apply inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-700 border border-blue-200;
+}
+
+.timeline-card {
+  @apply block border border-slate-200 rounded-2xl p-4 hover:bg-slate-50 transition;
+}
+
+.report-markdown {
+  @apply space-y-3 text-slate-800;
+}
+
+.md-h1 { @apply text-3xl font-semibold mt-4; }
+.md-h2 { @apply text-2xl font-semibold mt-4 pb-1 border-b border-slate-200; }
+.md-h3 { @apply text-xl font-semibold mt-3; }
+.md-p { @apply leading-7 text-slate-700; }
+.md-list { @apply list-disc pl-6 space-y-1 text-slate-700; }
+.md-list-ol { @apply list-decimal; }
+.md-code { @apply bg-slate-900 text-slate-50 p-3 rounded-xl overflow-x-auto text-sm; }
+.md-inline-code { @apply bg-slate-100 px-1 rounded text-sm; }
+.md-link { @apply text-blue-700 underline break-all; }
+.md-quote { @apply border-l-4 border-slate-300 pl-3 italic text-slate-600; }
+.md-check { @apply list-none -ml-5 flex items-center gap-2; }
+
+.md-alert {
+  @apply rounded-xl p-3 border;
+}
+.md-alert-title {
+  @apply font-semibold mb-1;
+}
+.md-alert-note {
+  @apply bg-blue-50 border-blue-200 text-blue-900;
+}
+.md-alert-warning {
+  @apply bg-amber-50 border-amber-200 text-amber-900;
+}
+.md-alert-tip {
+  @apply bg-emerald-50 border-emerald-200 text-emerald-900;
+}
+
+.evidence-card {
+  @apply block rounded-xl border border-slate-200 px-3 py-2 text-sm text-blue-700 hover:bg-blue-50 break-all;
+}
+
+.comment-bubble {
+  @apply p-3 rounded-xl border border-slate-200 bg-slate-50;
+}
+.comment-bubble.mine {
+  @apply bg-white border-slate-300;
+}
+.comment-meta {
+  @apply text-xs text-slate-500 flex items-center justify-between mb-1;
 }
