@@ -1,5 +1,4 @@
 'use client';
-// app/auth/login/page.tsx — Página de Login
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -11,19 +10,21 @@ import { useAuthStore } from '../../../store/authStore';
 import Link from 'next/link';
 
 const loginSchema = z.object({
-  email:    z.string().email('Email inválido').endsWith('@uni.pe', 'Solo correos @uni.pe'),
+  email: z.string().email('Email inválido').endsWith('@uni.pe', 'Solo correos @uni.pe'),
   password: z.string().min(1, 'Contraseña requerida'),
 });
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const router   = useRouter();
-  const setAuth  = useAuthStore(s => s.setAuth);
+  const router = useRouter();
+  const setAuth = useAuthStore((s) => s.setAuth);
   const [error, setError] = useState('');
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginForm>({
-    resolver: zodResolver(loginSchema)
-  });
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
 
   const onSubmit = async (data: LoginForm) => {
     setError('');
@@ -37,64 +38,37 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-950 to-indigo-900 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-        {/* Logo / Header */}
+    <div className="min-h-screen auth-shell flex items-center justify-center p-4">
+      <div className="auth-card w-full max-w-md p-8">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+          <div className="w-16 h-16 auth-logo mx-auto mb-4 flex items-center justify-center">
             <span className="text-white text-2xl font-bold">U</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Plataforma UNI</h1>
-          <p className="text-gray-500 mt-1">Inicia sesión con tu correo institucional</p>
+          <h1 className="text-2xl font-bold text-slate-900">Plataforma UNI</h1>
+          <p className="text-slate-500 mt-1">Inicia sesión con tu correo institucional</p>
         </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 mb-4 text-sm">
-            {error}
-          </div>
-        )}
+        {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 mb-4 text-sm">{error}</div>}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Correo institucional
-            </label>
-            <input
-              {...register('email')}
-              type="email"
-              placeholder="tu.nombre@uni.pe"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-            />
-            {errors.email && (
-              <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
-            )}
+            <label className="block text-sm font-medium text-slate-700 mb-1">Correo institucional</label>
+            <input {...register('email')} type="email" placeholder="tu.nombre@uni.pe" className="input" />
+            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Contraseña
-            </label>
-            <input
-              {...register('password')}
-              type="password"
-              placeholder="••••••••"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-            />
-            {errors.password && (
-              <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
-            )}
+            <label className="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
+            <input {...register('password')} type="password" placeholder="••••••••" className="input" />
+            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
           </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition"
-          >
+          <button type="submit" disabled={isSubmitting} className="w-full btn-primary disabled:opacity-50">
             {isSubmitting ? 'Iniciando sesión...' : 'Iniciar sesión'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-slate-500 mt-6">
           ¿No tienes cuenta?{' '}
           <Link href="/auth/register" className="text-blue-600 hover:underline font-medium">
             Regístrate aquí

@@ -127,3 +127,19 @@ body {
 .section-title {
   @apply text-sm font-semibold tracking-wide uppercase text-slate-500 mb-2;
 }
+
+
+.auth-shell {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(59, 130, 246, 0.16), transparent 28%),
+    radial-gradient(circle at 80% 20%, rgba(129, 140, 248, 0.16), transparent 34%),
+    linear-gradient(130deg, #0f172a 0%, #1e293b 35%, #1e1b4b 100%);
+}
+
+.auth-card {
+  @apply rounded-3xl border border-white/20 bg-white/95 shadow-[0_30px_65px_-35px_rgba(15,23,42,0.95)] backdrop-blur-sm;
+}
+
+.auth-logo {
+  @apply rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg;
+}
