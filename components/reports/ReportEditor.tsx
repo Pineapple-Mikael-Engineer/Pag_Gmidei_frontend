@@ -51,7 +51,6 @@ export default function ReportEditor({
   const [sections, setSections] = useState<ReportSections>(initialMarkdown ? parsed : emptySections);
   const [externalLinks, setExternalLinks] = useState<string[]>(Array.from(new Set([...initialExternalLinks, ...initialLinks])));
   const [newLink, setNewLink] = useState('');
-  const [files, setFiles] = useState<FileList | null>(null);
 
   const label = submitLabel || (mode === 'edit' ? 'Guardar edición' : 'Guardar reporte');
 
@@ -76,7 +75,7 @@ export default function ReportEditor({
       markdown,
       comments,
       externalLinks: externalLinks.join(', '),
-      attachments: files,
+      attachments: null,
     });
   };
 
@@ -124,19 +123,20 @@ export default function ReportEditor({
         </div>
       </div>
 
-      <FileUploadField
-        onUploadedUrl={(url) => {
-          setExternalLinks((prev) => Array.from(new Set([...prev, url])));
-          setSections((prev) => ({ ...prev, evidencia: Array.from(new Set([...prev.evidencia, url])) }));
-        }}
-      />
+      {showFiles && (
+        <FileUploadField
+          onUploadedUrl={(url) => {
+            setExternalLinks((prev) => Array.from(new Set([...prev, url])));
+            setSections((prev) => ({ ...prev, evidencia: Array.from(new Set([...prev.evidencia, url])) }));
+          }}
+        />
+      )}
 
       <div className="editor-section">
         <label className="editor-label">Comentarios adicionales</label>
         <input className="input" placeholder="Notas breves para revisión" value={comments} onChange={(e) => setComments(e.target.value)} />
       </div>
 
-      {showFiles && <input type="file" multiple onChange={(e) => setFiles(e.target.files)} className="input" />}
 
       <button disabled={saving} className="btn-primary disabled:opacity-60">{saving ? 'Guardando...' : label}</button>
     </form>
