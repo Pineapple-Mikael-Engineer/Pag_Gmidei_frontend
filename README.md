@@ -99,7 +99,7 @@ Muestra:
 - adjuntos,
 - comentarios en formato conversación,
 - edición para autor/admin, con asociación obligatoria a tareas vigentes del proyecto.
-- en creación ya no se elige fecha manual: frontend usa la fecha actual del día para mantener trazabilidad del reporte.
+- en creación ya no se elige fecha manual: frontend usa la fecha actual del día para mantener trazabilidad del reporte y lista las tareas del proyecto seleccionado para enlazar el reporte.
 
 ### 3.3 Módulo `Tareas`
 
@@ -119,15 +119,6 @@ Ruta: `/dashboard/tasks`
    - ventana de fechas,
    - criterio o descripción de cumplimiento,
    - visible solo para líderes, mentores o administrador global.
-
-#### Regla de edición de tarea
-
-La acción **"Editar tarea"** (título, descripción, fechas y subtareas) se habilita únicamente para:
-- líderes del proyecto,
-- mentores del proyecto,
-- administrador global.
-
-El miembro asignado sigue pudiendo mover el estado y escribir en la bitácora operativa, pero no modificar la estructura de la tarea si no tiene uno de esos roles.
 
 #### Regla de edición de tarea
 
@@ -463,7 +454,7 @@ El módulo visual y de calificación ya existe en frontend, pero su persistencia
 - `app/dashboard/page.tsx`
   - dashboard principal.
 - `app/dashboard/reports/page.tsx`
-  - pestañas de creación, visualización y calificación de reportes; obliga asociación a tareas vigentes y amplía visibilidad de tareas para líderes/mentores.
+  - pestañas de creación, visualización y calificación de reportes; obliga asociación a tareas vigentes y usa las tareas del proyecto seleccionado para enlazar reportes.
 - `app/dashboard/reports/view/page.tsx`
   - detalle del reporte y edición con las mismas reglas de asociación de tareas.
 - `components/reports/ReportViewer.tsx`

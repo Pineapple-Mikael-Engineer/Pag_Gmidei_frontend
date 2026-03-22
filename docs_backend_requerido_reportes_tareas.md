@@ -159,9 +159,9 @@ El frontend ya deja seleccionar tareas al crear o editar un reporte, pero ahora 
 
 - **Siempre debe existir al menos una tarea asociada** (`taskIds` no puede quedar vacío).
 - Solo se muestran tareas cuyo rango cubre la fecha del reporte.
-- Si el usuario es `LIDER`, `MENTOR` o `isGodAdmin=true` en el subgrupo, puede ver todas las tareas vigentes del proyecto.
-- Si el usuario es miembro estándar, solo ve sus propias tareas vigentes.
-- La disponibilidad debe resolverse con los roles reales del subgrupo, no solo con datos derivados de la tarea, porque líderes/mentores necesitan seguir viendo opciones aunque la tarea haya sido creada por otro usuario.
+- El selector toma las tareas del proyecto/subgrupo seleccionado.
+- El frontend filtra esas tareas por fecha para dejar solo las vigentes al momento del reporte.
+- La relación reporte → tarea ya no depende del responsable de la tarea en frontend; importa que pertenezca al proyecto correcto y que esté activa en la fecha del reporte.
 
 ### Regla funcional
 Una tarea es elegible si:

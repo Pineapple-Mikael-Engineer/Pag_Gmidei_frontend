@@ -93,13 +93,7 @@ export default function ReportDetailPage() {
     return matched?.subgroup?.name || matched?.subgroup?.code || report?.subgroup?.name || report?.subgroup?.code || 'Subgrupo';
   }, [editSubgroupId, mySubgroups, report?.subgroup?.code, report?.subgroup?.name]);
 
-  const canManageEditedSubgroup = useMemo(() => {
-    const subgroupId = editSubgroupId || report?.subgroup?.id;
-    const localRoles = mySubgroups.find((item) => item.subgroupId === subgroupId)?.roles || [];
-    return !!user?.isGodAdmin || canManageProject(localRoles) || canManageSubgroup(user, subgroupId);
-  }, [editSubgroupId, mySubgroups, report?.subgroup?.id, user]);
-
-  const editorTasks = useMemo(() => tasks.filter((task) => task.subgroupId === (editSubgroupId || report?.subgroup?.id || '') && (canManageEditedSubgroup || task.assigneeId === user?.id || (!!user?.email && task.assigneeEmail === user.email))), [canManageEditedSubgroup, editSubgroupId, report?.subgroup?.id, tasks, user?.email, user?.id]);
+  const editorTasks = useMemo(() => tasks.filter((task) => task.subgroupId === (editSubgroupId || report?.subgroup?.id || '')), [editSubgroupId, report?.subgroup?.id, tasks]);
 
   const relatedTasks = useMemo(() => {
     const linkedTaskIds = report?.taskIds || [];

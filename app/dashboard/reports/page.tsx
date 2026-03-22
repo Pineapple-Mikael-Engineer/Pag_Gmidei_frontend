@@ -119,12 +119,7 @@ export default function ReportsPage() {
       .catch(() => setTasks([]));
   }, []);
 
-  const canManageCurrentSubgroup = useMemo(() => {
-    const localRoles = mySubgroups.find((item) => item.subgroupId === subgroupId)?.roles || [];
-    return !!user?.isGodAdmin || canManageProject(localRoles) || canManageSubgroup(user, subgroupId);
-  }, [mySubgroups, subgroupId, user]);
-
-  const projectTasks = useMemo(() => tasks.filter((task) => task.subgroupId === subgroupId && (canManageCurrentSubgroup || task.assigneeId === user?.id || (!!user?.email && task.assigneeEmail === user.email))), [canManageCurrentSubgroup, subgroupId, tasks, user?.email, user?.id]);
+  const projectTasks = useMemo(() => tasks.filter((task) => task.subgroupId === subgroupId), [subgroupId, tasks]);
 
   const reportReviews = useMemo(() => {
     const loaded = loadReportReviews();
