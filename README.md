@@ -99,7 +99,7 @@ Muestra:
 - adjuntos,
 - comentarios en formato conversación,
 - edición para autor/admin, con asociación obligatoria a tareas vigentes del proyecto.
-- en creación ya no se elige fecha manual: frontend usa la fecha actual del día para mantener trazabilidad del reporte y, de momento, lista las tareas asociadas al usuario dentro del proyecto seleccionado sin filtrar por fecha para depuración.
+- en creación ya no se elige fecha manual: frontend usa la fecha actual del día para mantener trazabilidad del reporte y lista solo tareas del usuario activas para esa fecha dentro del proyecto seleccionado.
 
 ### 3.3 Módulo `Tareas`
 
@@ -454,15 +454,17 @@ El módulo visual y de calificación ya existe en frontend, pero su persistencia
 - `app/dashboard/page.tsx`
   - dashboard principal.
 - `app/dashboard/reports/page.tsx`
-  - pestañas de creación, visualización y calificación de reportes; obliga asociación y usa las tareas del usuario en el proyecto seleccionado para enlazar reportes, sin filtro de fecha mientras se depura el origen de datos.
+  - pestañas de creación, visualización y calificación de reportes; obliga asociación y usa las tareas del usuario activas para la fecha del reporte.
 - `app/dashboard/reports/view/page.tsx`
   - detalle del reporte y edición con las mismas reglas de asociación de tareas.
+- `app/dashboard/admin/page.tsx`
+  - panel dios ampliado con módulos de tareas, comentarios y herramientas de inspección/manipulación de datos.
 - `components/reports/ReportViewer.tsx`
   - visualización estructurada del reporte.
 - `components/reports/ReportEditor.tsx`
   - formulario que exige al menos una tarea activa y filtra por fecha del reporte.
 - `components/reports/CommentSection.tsx`
-  - comentarios tipo conversación.
+  - comentarios tipo conversación con agregación completa y orden cronológico.
 - `lib/reportReviews.ts`
   - persistencia local de calificación de reportes.
 - `app/dashboard/tasks/page.tsx`
@@ -500,6 +502,9 @@ NEXT_PUBLIC_BASE_PATH=
 - La edición estructural de tareas quedó restringida a líderes, mentores y modo dios.
 - La asociación de reportes a tareas ahora es obligatoria y solo admite tareas vigentes para la fecha del reporte.
 - La creación de reportes fija la fecha al día actual y ya no expone selector manual.
+- El selector de tareas del reporte volvió a filtrar por fecha del reporte sobre las tareas del usuario.
+- La vista de comentarios del reporte ahora agrega y ordena toda la conversación por fecha.
+- El panel dios suma módulos de tareas, comentarios y herramientas de inspección/manipulación de datos.
 - La pestaña de asignación de tareas se oculta a miembros sin rol de líder, mentor o modo dios.
 - El README quedó alineado con este nuevo flujo para que backend sepa qué información y endpoints hacen falta.
 

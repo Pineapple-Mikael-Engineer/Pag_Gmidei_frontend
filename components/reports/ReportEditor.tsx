@@ -114,7 +114,7 @@ export default function ReportEditor({
     const validTaskIds = taskIds.filter((taskId) => eligibleTaskIds.has(taskId));
     if (validTaskIds.length === 0) {
       setTaskError(eligibleTasks.length === 0
-        ? 'No hay tareas disponibles asociadas a tu usuario dentro del proyecto seleccionado.'
+        ? 'No hay tareas activas disponibles para la fecha seleccionada dentro del proyecto.'
         : 'Debes asociar al menos una tarea antes de guardar el reporte.');
       return;
     }
@@ -158,10 +158,10 @@ export default function ReportEditor({
       <div className="editor-section space-y-3">
         <div>
           <label className="editor-label">Asociar a tareas activas</label>
-          <p className="text-sm text-slate-500 mt-1">Debes asociar al menos una tarea. Para depuración, aquí se listan las tareas asociadas a tu usuario dentro del proyecto seleccionado, sin filtrar por fechas.</p>
+          <p className="text-sm text-slate-500 mt-1">Debes asociar al menos una tarea y solo se muestran las tareas de tu usuario cuyo rango incluye la fecha del reporte.</p>
         </div>
         {eligibleTasks.length === 0 ? (
-          <div className="empty-state"><h3>Sin tareas disponibles</h3><p>No se encontraron tareas asociadas a tu usuario dentro del proyecto seleccionado.</p></div>
+          <div className="empty-state"><h3>Sin tareas elegibles</h3><p>No se encontraron tareas de tu usuario activas para la fecha del reporte dentro del proyecto seleccionado.</p></div>
         ) : (
           <div className="grid gap-2">
             {eligibleTasks.map((task) => (

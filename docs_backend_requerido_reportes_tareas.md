@@ -158,9 +158,9 @@ Esto ayuda a que el frontend resuelva correctamente la visibilidad aunque cambie
 El frontend ya deja seleccionar tareas al crear o editar un reporte, pero ahora aplica estas reglas de forma obligatoria:
 
 - **Siempre debe existir al menos una tarea asociada** (`taskIds` no puede quedar vacío).
-- Para depuración actual, el selector toma las tareas del usuario dentro del proyecto/subgrupo seleccionado.
-- Temporalmente no se aplica filtro por fechas en frontend para aislar si el problema viene del backend o de la UI.
-- La asociación sigue siendo obligatoria, pero la lista visible depende del responsable (`assigneeId`/`assigneeEmail`) y del subgrupo seleccionado.
+- El selector toma las tareas del usuario dentro del proyecto/subgrupo seleccionado.
+- Solo se muestran tareas cuyo rango cubre la fecha del reporte.
+- La asociación sigue siendo obligatoria, pero la lista visible depende del responsable (`assigneeId`/`assigneeEmail`), del subgrupo seleccionado y del rango `startDate/endDate`.
 
 ### Regla funcional
 Una tarea es elegible si:
@@ -261,6 +261,7 @@ Para cumplir al 100% con lo que pediste, backend debería implementar o confirma
 3. Asociación persistida entre reportes y tareas (`taskIds` o tabla pivote equivalente), rechazando reportes sin tareas asociadas.
 4. Filtro correcto por rango de fechas para que un reporte se vincule solo a tareas vigentes en su fecha.
 5. Permisos consistentes para edición estructural de tareas: solo líder, mentor o modo dios dentro del subgrupo.
-6. Respuestas consistentes de `GET /tasks` y `GET /reports/:id` incluyendo ids de relación.
+6. Listado completo de comentarios por reporte para que frontend pueda renderizar toda la conversación en orden cronológico.
+7. Respuestas consistentes de `GET /tasks` y `GET /reports/:id` incluyendo ids de relación.
 
 Si alguno de esos puntos no existe, el frontend puede mostrar parte del flujo, pero no podrá garantizar persistencia multiusuario en DB.
