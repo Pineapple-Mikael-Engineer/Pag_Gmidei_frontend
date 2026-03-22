@@ -103,9 +103,31 @@ function normalizeComments(rawComments: any[], reportId: string): CommentItem[] 
 }
 
 function extractCommentsFromPayload(payload: any, reportId: string, initialComment?: string | null): CommentItem[] {
+  const merged = new Map<string, CommentItem>();
+
   for (const candidate of extractCommentCollections(payload)) {
     const normalized = normalizeComments(candidate, reportId);
-    if (normalized.length > 0) return normalized;
+    normalized.forEach((comment) => {
+      const key = comment.id || `${comment.userId}:${comment.createdAt}:${comment.content}`;
+      if (!merged.has(key)) merged.set(key, comment);
+    });
+  }
+
+  if (merged.size > 0) {
+    const mergedItems = Array.from(merged.values());
+    const hasInitialComment = initialComment && mergedItems.some((comment) => comment.content.trim() === initialComment.trim());
+    if (initialComment && !hasInitialComment) {
+      const earliest = mergedItems.reduce((min, comment) => Math.min(min, new Date(comment.createdAt).getTime()), Date.now());
+      mergedItems.unshift({
+        id: 'seed-comment',
+        reportId,
+        userId: 'system',
+        authorName: 'Comentario inicial',
+        content: initialComment,
+        createdAt: new Date(earliest - 1000).toISOString(),
+      });
+    }
+    return mergedItems;
   }
 
   const possibleString =

@@ -97,8 +97,9 @@ Muestra:
 - markdown renderizado,
 - panel lateral de evidencia,
 - adjuntos,
-- comentarios en formato conversación,
-- edición para autor/admin.
+- comentarios en formato conversación completa, preservando el comentario inicial del reporte,
+- edición para autor/admin, con asociación obligatoria a tareas vigentes del proyecto.
+- en creación ya no se elige fecha manual: frontend usa la fecha actual del día para mantener trazabilidad del reporte y lista solo tareas del usuario activas para esa fecha dentro del proyecto seleccionado.
 
 ### 3.3 Módulo `Tareas`
 
@@ -116,7 +117,17 @@ Ruta: `/dashboard/tasks`
    - creación de tareas,
    - definición de responsable,
    - ventana de fechas,
-   - criterio o descripción de cumplimiento.
+   - criterio o descripción de cumplimiento,
+   - visible solo para líderes, mentores o administrador global.
+
+#### Regla de edición de tarea
+
+La acción **"Editar tarea"** (título, descripción, fechas y subtareas) se habilita únicamente para:
+- líderes del proyecto,
+- mentores del proyecto,
+- administrador global.
+
+El miembro asignado sigue pudiendo mover el estado y escribir en la bitácora operativa, pero no modificar la estructura de la tarea si no tiene uno de esos roles.
 
 3. **Calificación**
    - validación y revisión separadas del flujo operativo,
@@ -443,21 +454,27 @@ El módulo visual y de calificación ya existe en frontend, pero su persistencia
 - `app/dashboard/page.tsx`
   - dashboard principal.
 - `app/dashboard/reports/page.tsx`
-  - pestañas de creación, visualización y calificación de reportes.
+  - pestañas de creación, visualización y calificación de reportes; obliga asociación y usa las tareas del usuario activas para la fecha del reporte.
 - `app/dashboard/reports/view/page.tsx`
-  - detalle del reporte.
+  - detalle del reporte y edición con las mismas reglas de asociación de tareas.
+- `app/dashboard/admin/page.tsx`
+  - panel dios ampliado con módulos de tareas, comentarios y herramientas de inspección/manipulación de datos, incluyendo eliminación de tareas/comentarios.
 - `components/reports/ReportViewer.tsx`
   - visualización estructurada del reporte.
+- `components/reports/ReportEditor.tsx`
+  - formulario que exige al menos una tarea activa y filtra por fecha del reporte.
 - `components/reports/CommentSection.tsx`
-  - comentarios tipo conversación.
+  - comentarios tipo conversación con agregación completa, conservación del comentario inicial y orden cronológico.
 - `lib/reportReviews.ts`
   - persistencia local de calificación de reportes.
 - `app/dashboard/tasks/page.tsx`
   - entrada del módulo de tareas.
 - `components/tasks/TaskBoard.tsx`
-  - pestañas de visualización, asignación y calificación de tareas.
+  - pestañas de visualización, asignación y calificación de tareas con permisos reforzados para edición estructural.
 - `lib/tasks.ts`
   - persistencia local de tareas y revisión.
+- `lib/permissions.ts`
+  - reglas compartidas de permisos por rol/subgrupo.
 
 ---
 
@@ -482,6 +499,14 @@ NEXT_PUBLIC_BASE_PATH=
 - Los módulos `Reportes` y `Tareas` fueron reorganizados en pestañas para reducir saturación visual.
 - Se añadió una capa de **calificación** para reportes con estados, etiquetas, checklist y notas.
 - Se amplió la **calificación de tareas** con etiquetas, nivel de cumplimiento y checkbox de validación del líder.
+- La edición estructural de tareas quedó restringida a líderes, mentores y modo dios.
+- La asociación de reportes a tareas ahora es obligatoria y solo admite tareas vigentes para la fecha del reporte.
+- La creación de reportes fija la fecha al día actual y ya no expone selector manual.
+- El selector de tareas del reporte volvió a filtrar por fecha del reporte sobre las tareas del usuario.
+- La vista de comentarios del reporte ahora agrega y ordena toda la conversación por fecha sin perder el comentario inicial.
+- La vista operativa de tareas ya no muestra bitácora y ahora expone reportes relacionados cuando existen.
+- El panel dios suma módulos de tareas, comentarios y herramientas de inspección/manipulación de datos, además de eliminación administrativa de tareas/comentarios.
+- La pestaña de asignación de tareas se oculta a miembros sin rol de líder, mentor o modo dios.
 - El README quedó alineado con este nuevo flujo para que backend sepa qué información y endpoints hacen falta.
 
 

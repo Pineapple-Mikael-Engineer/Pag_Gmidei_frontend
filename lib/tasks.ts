@@ -239,6 +239,12 @@ export function updateTask(taskId: string, patch: Partial<TaskItem>) {
   return tasks;
 }
 
+export function deleteTask(taskId: string) {
+  const tasks = loadTasks().filter((task) => task.id !== taskId);
+  saveTasks(tasks);
+  return tasks;
+}
+
 export async function fetchTasksFromAnySource(): Promise<TaskLoadResult> {
   try {
     const response = await tasksApi.getAll();
@@ -289,4 +295,15 @@ export async function updateTaskInAnySource(taskId: string, patch: TaskMutationI
   }
 
   return { tasks: updateTask(taskId, patch), source: 'local' };
+}
+
+export async function deleteTaskInAnySource(taskId: string): Promise<TaskLoadResult> {
+  try {
+    await tasksApi.delete(taskId);
+    const next = loadTasks().filter((item) => item.id !== taskId);
+    saveTasks(next);
+    return { tasks: next, source: 'backend' };
+  } catch {
+    return { tasks: deleteTask(taskId), source: 'local' };
+  }
 }
