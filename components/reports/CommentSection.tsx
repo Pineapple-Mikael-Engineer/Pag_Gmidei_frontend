@@ -103,10 +103,17 @@ function normalizeComments(rawComments: any[], reportId: string): CommentItem[] 
 }
 
 function extractCommentsFromPayload(payload: any, reportId: string, initialComment?: string | null): CommentItem[] {
+  const merged = new Map<string, CommentItem>();
+
   for (const candidate of extractCommentCollections(payload)) {
     const normalized = normalizeComments(candidate, reportId);
-    if (normalized.length > 0) return normalized;
+    normalized.forEach((comment) => {
+      const key = comment.id || `${comment.userId}:${comment.createdAt}:${comment.content}`;
+      if (!merged.has(key)) merged.set(key, comment);
+    });
   }
+
+  if (merged.size > 0) return Array.from(merged.values());
 
   const possibleString =
     (typeof payload?.report?.comments === 'string' && payload.report.comments) ||

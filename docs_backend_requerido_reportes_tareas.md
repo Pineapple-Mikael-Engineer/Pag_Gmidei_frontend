@@ -116,6 +116,9 @@ Esto es importante porque frontend ya deja:
 - actualizar bitácora
 - validar por líder
 
+### Regla de permisos en frontend
+La edición estructural de la tarea (título, descripción, fechas y subtareas) ahora se expone solo a usuarios con rol `LIDER`, `MENTOR` o `isGodAdmin=true` dentro del subgrupo de la tarea. El miembro asignado puede seguir actualizando su bitácora y estado operativo, pero no editar la estructura completa si no tiene esos roles.
+
 ## 4. Listar tareas
 
 ### Ruta
@@ -152,7 +155,12 @@ Esto ayuda a que el frontend resuelva correctamente la visibilidad aunque cambie
 
 ## 5. Asociar reportes a tareas
 
-El frontend ya deja seleccionar tareas al crear o editar un reporte, **pero solo muestra tareas cuyo rango cubre la fecha del reporte y que además estén asignadas al usuario que crea/edita el reporte**. Los administradores pueden ver todas.
+El frontend ya deja seleccionar tareas al crear o editar un reporte, pero ahora aplica estas reglas de forma obligatoria:
+
+- **Siempre debe existir al menos una tarea asociada** (`taskIds` no puede quedar vacío).
+- El selector toma las tareas del usuario dentro del proyecto/subgrupo seleccionado.
+- Solo se muestran tareas cuyo rango cubre la fecha del reporte.
+- La asociación sigue siendo obligatoria, pero la lista visible depende del responsable (`assigneeId`/`assigneeEmail`), del subgrupo seleccionado y del rango `startDate/endDate`.
 
 ### Regla funcional
 Una tarea es elegible si:
@@ -167,8 +175,8 @@ startDate <= reportDate <= endDate
 `POST /reports`
 
 ### Campos adicionales que backend debería aceptar
-- `reportDate`
-- `taskIds` (puede venir repetido en `FormData` o como arreglo)
+- `reportDate` (en creación el frontend lo envía automáticamente con la fecha actual; ya no se captura manualmente en UI)
+- `taskIds` (puede venir repetido en `FormData` o como arreglo, y debe validarse como obligatorio)
 
 Ejemplo conceptual:
 
@@ -250,8 +258,10 @@ Para cumplir al 100% con lo que pediste, backend debería implementar o confirma
 
 1. Persistencia real de tareas en DB.
 2. CRUD de tareas con edición de plazo y subtareas.
-3. Asociación persistida entre reportes y tareas (`taskIds` o tabla pivote equivalente).
+3. Asociación persistida entre reportes y tareas (`taskIds` o tabla pivote equivalente), rechazando reportes sin tareas asociadas.
 4. Filtro correcto por rango de fechas para que un reporte se vincule solo a tareas vigentes en su fecha.
-5. Respuestas consistentes de `GET /tasks` y `GET /reports/:id` incluyendo ids de relación.
+5. Permisos consistentes para edición estructural de tareas: solo líder, mentor o modo dios dentro del subgrupo.
+6. Listado completo de comentarios por reporte para que frontend pueda renderizar toda la conversación en orden cronológico.
+7. Respuestas consistentes de `GET /tasks` y `GET /reports/:id` incluyendo ids de relación.
 
 Si alguno de esos puntos no existe, el frontend puede mostrar parte del flujo, pero no podrá garantizar persistencia multiusuario en DB.

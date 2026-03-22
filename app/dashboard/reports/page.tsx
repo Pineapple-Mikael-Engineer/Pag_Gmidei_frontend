@@ -118,7 +118,7 @@ export default function ReportsPage() {
       .catch(() => setTasks([]));
   }, []);
 
-  const projectTasks = useMemo(() => tasks.filter((task) => task.subgroupId === subgroupId && (user?.isGodAdmin || task.assigneeId === user?.id || (!!user?.email && task.assigneeEmail === user.email))), [subgroupId, tasks, user?.email, user?.id, user?.isGodAdmin]);
+  const projectTasks = useMemo(() => tasks.filter((task) => task.subgroupId === subgroupId && (task.assigneeId === user?.id || (!!user?.email && task.assigneeEmail === user.email))), [subgroupId, tasks, user?.email, user?.id]);
 
   const reportReviews = useMemo(() => {
     const loaded = loadReportReviews();
@@ -209,6 +209,7 @@ export default function ReportsPage() {
               saving={saving}
               initialTaskIds={[]}
               availableTasks={projectTasks}
+              allowReportDateEditing={false}
               onSubmit={async ({ title, markdown, comments, externalLinks, reportDate, taskIds, attachments }) => {
                 setSaving(true);
                 setError('');
