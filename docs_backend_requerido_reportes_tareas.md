@@ -261,7 +261,7 @@ Para cumplir al 100% con lo que pediste, backend debería implementar o confirma
 3. Asociación persistida entre reportes y tareas (`taskIds` o tabla pivote equivalente), rechazando reportes sin tareas asociadas.
 4. Filtro correcto por rango de fechas para que un reporte se vincule solo a tareas vigentes en su fecha.
 5. Permisos consistentes para edición estructural de tareas: solo líder, mentor o modo dios dentro del subgrupo.
-6. Listado completo de comentarios por reporte para que frontend pueda renderizar toda la conversación en orden cronológico.
+6. Listado completo de comentarios por reporte para que frontend pueda renderizar toda la conversación en orden cronológico sin perder el comentario inicial del reporte.
 7. Respuestas consistentes de `GET /tasks` y `GET /reports/:id` incluyendo ids de relación.
 
 Si alguno de esos puntos no existe, el frontend puede mostrar parte del flujo, pero no podrá garantizar persistencia multiusuario en DB.

@@ -1,7 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { GroupRole } from '../../lib/api';
+import { GroupRole, reportsApi } from '../../lib/api';
 import { canLeadProject, canManageProject } from '../../lib/permissions';
 import { createTaskInAnySource, fetchTasksFromAnySource, TaskAssignee, TaskItem, TaskScore, TaskStatus, TaskSubtask, updateTaskInAnySource } from '../../lib/tasks';
 
@@ -87,6 +88,7 @@ export default function TaskBoard({ currentUserId, currentUserName, currentUserE
   const [storageMode, setStorageMode] = useState<'backend' | 'local'>('local');
   const [editingTaskId, setEditingTaskId] = useState('');
   const [editingForm, setEditingForm] = useState<EditableTaskForm | null>(null);
+  const [reportSummaries, setReportSummaries] = useState<Array<{ id: string; title: string }>>([]);
 
   useEffect(() => {
     const boot = async () => {
@@ -98,6 +100,10 @@ export default function TaskBoard({ currentUserId, currentUserName, currentUserE
     };
 
     void boot();
+    reportsApi.getAll({ limit: 200 }).then((res) => {
+      const loaded = res.data?.data || res.data?.reports || [];
+      setReportSummaries(loaded.map((report: any) => ({ id: String(report.id || report._id || ''), title: String(report.title || 'Reporte') })).filter((report: { id: string; title: string }) => report.id));
+    }).catch(() => setReportSummaries([]));
 
     if (projects.length > 0) {
       const manageable = projects.find((project) => canManageProject(project.roles));
@@ -159,6 +165,8 @@ export default function TaskBoard({ currentUserId, currentUserName, currentUserE
     if (isGodAdmin) return true;
     return projects.some((project) => canManageProject(project.roles));
   }, [isGodAdmin, projects]);
+
+  const reportTitleById = useMemo(() => new Map(reportSummaries.map((report) => [report.id, report.title])), [reportSummaries]);
 
   const summary = useMemo(() => {
     const completed = visibleTasks.filter((task) => task.status === 'completada').length;
@@ -400,16 +408,18 @@ export default function TaskBoard({ currentUserId, currentUserName, currentUserE
                       </div>
                     )}
 
-                    <div>
-                      <label className="editor-label">Bitácora de la tarea</label>
-                      <textarea
-                        className="input min-h-24"
-                        value={task.progressNote || ''}
-                        onChange={(event) => void handleNoteChange(task, event.target.value, 'progressNote')}
-                        placeholder="Añade avances, incidencias o el estado operativo de la tarea."
-                        disabled={!canUpdate}
-                      />
-                    </div>
+                    {(task.linkedReportIds || []).length > 0 && (
+                      <div>
+                        <label className="editor-label">Reportes relacionados</label>
+                        <div className="flex flex-wrap gap-2">
+                          {(task.linkedReportIds || []).map((reportId) => (
+                            <Link key={reportId} href={`/dashboard/reports/view?id=${reportId}`} className="badge-link hover:underline">
+                              {reportTitleById.get(reportId) || `Reporte ${reportId.slice(0, 8)}`}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </article>
                 );
               })}

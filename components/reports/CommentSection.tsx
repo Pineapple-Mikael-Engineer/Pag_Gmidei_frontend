@@ -113,6 +113,23 @@ function extractCommentsFromPayload(payload: any, reportId: string, initialComme
     });
   }
 
+  if (merged.size > 0) {
+    const mergedItems = Array.from(merged.values());
+    const hasInitialComment = initialComment && mergedItems.some((comment) => comment.content.trim() === initialComment.trim());
+    if (initialComment && !hasInitialComment) {
+      const earliest = mergedItems.reduce((min, comment) => Math.min(min, new Date(comment.createdAt).getTime()), Date.now());
+      mergedItems.unshift({
+        id: 'seed-comment',
+        reportId,
+        userId: 'system',
+        authorName: 'Comentario inicial',
+        content: initialComment,
+        createdAt: new Date(earliest - 1000).toISOString(),
+      });
+    }
+    return mergedItems;
+  }
+
   if (merged.size > 0) return Array.from(merged.values());
 
   const possibleString =

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { adminApi, commentsApi, CommentApiModel } from '../../../lib/api';
 import { formatPeruDateTime } from '../../../lib/datetime';
-import { fetchTasksFromAnySource, TaskItem, updateTaskInAnySource } from '../../../lib/tasks';
+import { deleteTaskInAnySource, fetchTasksFromAnySource, TaskItem, updateTaskInAnySource } from '../../../lib/tasks';
 import { useAuthStore } from '../../../store/authStore';
 
 interface AdminUser {
@@ -226,6 +226,20 @@ export default function AdminPage() {
     await loadComments(comment.reportId || selectedReportId);
   };
 
+  const handleTaskDelete = async (task: TaskItem) => {
+    if (!confirm(`¿Eliminar la tarea "${task.title}"?`)) return;
+    await deleteTaskInAnySource(task.id);
+    setFeedback(`Tarea eliminada: ${task.title}`);
+    await loadTasks();
+  };
+
+  const handleCommentDelete = async (comment: AdminComment) => {
+    if (!confirm('¿Eliminar comentario definitivamente?')) return;
+    await commentsApi.delete(comment.id);
+    setFeedback(`Comentario eliminado en ${selectedReportLabel}.`);
+    await loadComments(comment.reportId || selectedReportId);
+  };
+
   if (!user?.isGodAdmin) return <div className="page-shell">Acceso restringido.</div>;
 
   return (
@@ -414,6 +428,7 @@ export default function AdminPage() {
                     <textarea className="input min-h-24" value={draft.reviewNote} onChange={(event) => setTaskDraft(task, { reviewNote: event.target.value })} placeholder="Nota de revisión" />
                   </div>
                   <div className="flex gap-2 justify-end">
+                    <button className="border border-red-300 text-red-700 rounded-xl px-3 py-1 text-sm hover:bg-red-50" onClick={() => void handleTaskDelete(task)}>Eliminar</button>
                     <button className="btn-secondary text-sm" onClick={() => setTaskDraft(task, {
                       status: task.status,
                       startDate: task.startDate,
@@ -456,7 +471,8 @@ export default function AdminPage() {
                   value={comment.content}
                   onChange={(event) => setComments((prev) => prev.map((item) => item.id === comment.id ? { ...item, content: event.target.value } : item))}
                 />
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
+                  <button className="border border-red-300 text-red-700 rounded-xl px-3 py-1 text-sm hover:bg-red-50" onClick={() => void handleCommentDelete(comment)}>Eliminar</button>
                   <button className="btn-primary text-sm" onClick={() => void handleCommentSave(comment)}>Guardar comentario</button>
                 </div>
               </div>
