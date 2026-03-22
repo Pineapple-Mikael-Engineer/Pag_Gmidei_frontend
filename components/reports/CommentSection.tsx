@@ -91,9 +91,11 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<CommentItem[]>([]);
 
-  const loadComments = useCallback(async () => {
-    setLoading(true);
-    setWarning('');
+  const loadComments = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setLoading(true);
+      setWarning('');
+    }
 
     try {
       const res = await commentsApi.listByReport(reportId);
@@ -101,7 +103,7 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
       const normalized = normalizeComments(Array.isArray(raw) ? raw : [], reportId);
       if (normalized.length > 0) {
         setItems(normalized);
-        return;
+        return normalized;
       }
     } catch {
       // fallback below
@@ -111,11 +113,14 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
       const res = await reportsApi.getOne(reportId);
       const fallbackFromReport = extractCommentsFromReportPayload(res.data, reportId, initialComment);
       setItems(fallbackFromReport);
+      return fallbackFromReport;
     } catch {
-      setItems(seedFromInitialComment(reportId, initialComment));
-      setWarning('El backend no devolvió una lista de comentarios para este reporte.');
+      const seeded = seedFromInitialComment(reportId, initialComment);
+      setItems(seeded);
+      setWarning('El backend no devolvió una lista de comentarios persistidos para este reporte.');
+      return seeded;
     } finally {
-      setLoading(false);
+      if (!options?.silent) setLoading(false);
     }
   }, [initialComment, reportId]);
 
@@ -135,25 +140,15 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
 
     try {
       const res = await commentsApi.create({ reportId, content: draft.trim() });
-      const comment = res.data?.comment || res.data?.data;
-      if (!comment?.id && !comment?.content) {
-        setWarning('El backend recibió el comentario, pero no devolvió el registro creado.');
+      const created = res.data?.comment || res.data?.data;
+      const refreshed = await loadComments({ silent: true });
+      const wasConfirmed = created?.id ? refreshed.some((item) => item.id === created.id) : false;
+
+      if (!created?.id || !wasConfirmed) {
+        setWarning('El backend respondió al crear el comentario, pero luego no lo devolvió en la lectura. Parece un problema de persistencia o de listado en backend.');
       } else {
-        setItems((prev) => {
-          const nextComment = {
-            id: comment.id,
-            reportId: comment.reportId || reportId,
-            userId: comment.userId || currentUserId,
-            authorName: comment.user?.fullName || currentUserName,
-            content: comment.content,
-            createdAt: comment.createdAt || new Date().toISOString(),
-            editedAt: comment.editedAt,
-          };
-          const base = prev.filter((item) => item.id !== 'seed-comment' && item.id !== nextComment.id);
-          return [...base, nextComment];
-        });
+        setDraft('');
       }
-      setDraft('');
     } catch {
       setWarning('No se pudo guardar el comentario en backend. No se agregó localmente para evitar inconsistencias.');
     }
@@ -164,7 +159,11 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
     setWarning('');
     try {
       await commentsApi.update(item.id, { content: editingDraft.trim() });
-      setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, content: editingDraft.trim(), editedAt: new Date().toISOString() } : x)));
+      const refreshed = await loadComments({ silent: true });
+      const updated = refreshed.find((entry) => entry.id === item.id);
+      if (!updated || updated.content !== editingDraft.trim()) {
+        setWarning('El backend respondió a la edición, pero la lectura posterior no reflejó el cambio.');
+      }
     } catch {
       setWarning('No se pudo persistir la edición del comentario en backend.');
     }
@@ -186,7 +185,7 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
 
       <div className="conversation-thread">
         {loading && <p className="text-sm text-slate-500">Cargando comentarios...</p>}
-        {!loading && orderedItems.length === 0 && <div className="empty-state"><h3>Sin comentarios todavía</h3><p>Esta conversación solo mostrará comentarios devueltos por backend.</p></div>}
+        {!loading && orderedItems.length === 0 && <div className="empty-state"><h3>Sin comentarios todavía</h3><p>Esta conversación solo mostrará comentarios confirmados por backend.</p></div>}
         {orderedItems.map((item) => {
           const mine = item.userId === currentUserId;
           const isEditing = editingId === item.id;
@@ -229,7 +228,7 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
       <form onSubmit={onSubmit} className="comment-composer">
         <textarea className="input min-h-28" placeholder="Escribe un comentario visible para todos los usuarios que pueden ver el reporte..." value={draft} onChange={(e) => setDraft(e.target.value)} />
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-slate-400">Si backend no persiste el comentario, no se mostrará como agregado.</p>
+          <p className="text-xs text-slate-400">El comentario solo se mostrará si backend lo devuelve en la lectura posterior.</p>
           <button className="btn-primary self-end" type="submit">Enviar comentario</button>
         </div>
       </form>

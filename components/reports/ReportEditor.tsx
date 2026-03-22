@@ -81,11 +81,6 @@ export default function ReportEditor({
 
   return (
     <form onSubmit={handleSubmit} className="report-editor space-y-5">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-slate-900">{mode === 'edit' ? 'Editar reporte' : 'Nuevo reporte'}</h2>
-        <p className="text-sm text-slate-500">Formato guiado por bloques para mantener consistencia.</p>
-      </div>
-
       <div className="editor-section">
         <label className="editor-label">Título del reporte</label>
         <input className="input" placeholder="Título" value={title} onChange={(e) => setTitle(e.target.value)} required />
