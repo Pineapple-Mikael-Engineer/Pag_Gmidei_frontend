@@ -493,7 +493,9 @@ Estos puntos son necesarios o muy recomendables para que el frontend cumpla exac
 
 1. **Comentarios públicos por reporte**
    - El frontend ya intenta consumir `GET /comments?reportId=:id` para mostrar una conversación compartida.
-   - Si ese endpoint no existe, la UI cae a caché local y la conversación no será realmente pública entre usuarios.
+   - `POST /comments` debe persistir realmente el comentario en base de datos y devolver el registro creado con `id`, `reportId`, `userId`, `content`, `createdAt` y `user.fullName`.
+   - `PUT /comments/:commentId` debe persistir la edición y reflejarse luego en la lectura.
+   - Si `GET /comments?reportId=:id` no existe o no devuelve los comentarios persistidos, la conversación no podrá reflejar la base real al recargar.
 
 2. **Edición del grupo del reporte**
    - El frontend ahora envía `subgroupId` al editar un reporte (`PUT /reports/:id` o `PATCH /reports/:id`).
