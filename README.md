@@ -99,7 +99,7 @@ Muestra:
 - adjuntos,
 - comentarios en formato conversación,
 - edición para autor/admin, con asociación obligatoria a tareas vigentes del proyecto.
-- en creación ya no se elige fecha manual: frontend usa la fecha actual del día para mantener trazabilidad del reporte y lista las tareas del proyecto seleccionado para enlazar el reporte.
+- en creación ya no se elige fecha manual: frontend usa la fecha actual del día para mantener trazabilidad del reporte y, de momento, lista las tareas asociadas al usuario dentro del proyecto seleccionado sin filtrar por fecha para depuración.
 
 ### 3.3 Módulo `Tareas`
 
@@ -454,7 +454,7 @@ El módulo visual y de calificación ya existe en frontend, pero su persistencia
 - `app/dashboard/page.tsx`
   - dashboard principal.
 - `app/dashboard/reports/page.tsx`
-  - pestañas de creación, visualización y calificación de reportes; obliga asociación a tareas vigentes y usa las tareas del proyecto seleccionado para enlazar reportes.
+  - pestañas de creación, visualización y calificación de reportes; obliga asociación y usa las tareas del usuario en el proyecto seleccionado para enlazar reportes, sin filtro de fecha mientras se depura el origen de datos.
 - `app/dashboard/reports/view/page.tsx`
   - detalle del reporte y edición con las mismas reglas de asociación de tareas.
 - `components/reports/ReportViewer.tsx`

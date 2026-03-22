@@ -93,7 +93,7 @@ export default function ReportDetailPage() {
     return matched?.subgroup?.name || matched?.subgroup?.code || report?.subgroup?.name || report?.subgroup?.code || 'Subgrupo';
   }, [editSubgroupId, mySubgroups, report?.subgroup?.code, report?.subgroup?.name]);
 
-  const editorTasks = useMemo(() => tasks.filter((task) => task.subgroupId === (editSubgroupId || report?.subgroup?.id || '')), [editSubgroupId, report?.subgroup?.id, tasks]);
+  const editorTasks = useMemo(() => tasks.filter((task) => task.subgroupId === (editSubgroupId || report?.subgroup?.id || '') && (task.assigneeId === user?.id || (!!user?.email && task.assigneeEmail === user.email))), [editSubgroupId, report?.subgroup?.id, tasks, user?.email, user?.id]);
 
   const relatedTasks = useMemo(() => {
     const linkedTaskIds = report?.taskIds || [];

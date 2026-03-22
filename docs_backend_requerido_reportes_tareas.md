@@ -158,10 +158,9 @@ Esto ayuda a que el frontend resuelva correctamente la visibilidad aunque cambie
 El frontend ya deja seleccionar tareas al crear o editar un reporte, pero ahora aplica estas reglas de forma obligatoria:
 
 - **Siempre debe existir al menos una tarea asociada** (`taskIds` no puede quedar vacío).
-- Solo se muestran tareas cuyo rango cubre la fecha del reporte.
-- El selector toma las tareas del proyecto/subgrupo seleccionado.
-- El frontend filtra esas tareas por fecha para dejar solo las vigentes al momento del reporte.
-- La relación reporte → tarea ya no depende del responsable de la tarea en frontend; importa que pertenezca al proyecto correcto y que esté activa en la fecha del reporte.
+- Para depuración actual, el selector toma las tareas del usuario dentro del proyecto/subgrupo seleccionado.
+- Temporalmente no se aplica filtro por fechas en frontend para aislar si el problema viene del backend o de la UI.
+- La asociación sigue siendo obligatoria, pero la lista visible depende del responsable (`assigneeId`/`assigneeEmail`) y del subgrupo seleccionado.
 
 ### Regla funcional
 Una tarea es elegible si:

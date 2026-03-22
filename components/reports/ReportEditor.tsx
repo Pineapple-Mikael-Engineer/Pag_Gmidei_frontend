@@ -43,10 +43,8 @@ function todayValue() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function isTaskEligibleForReport(task: TaskItem, reportDate: string) {
-  if (!reportDate) return true;
-  const day = reportDate.slice(0, 10);
-  return task.startDate <= day && task.endDate >= day;
+function isTaskEligibleForReport(_task: TaskItem, _reportDate: string) {
+  return true;
 }
 
 export default function ReportEditor({
@@ -116,8 +114,8 @@ export default function ReportEditor({
     const validTaskIds = taskIds.filter((taskId) => eligibleTaskIds.has(taskId));
     if (validTaskIds.length === 0) {
       setTaskError(eligibleTasks.length === 0
-        ? 'No hay tareas activas disponibles para la fecha seleccionada, por lo que no se puede guardar el reporte.'
-        : 'Debes asociar al menos una tarea activa antes de guardar el reporte.');
+        ? 'No hay tareas disponibles asociadas a tu usuario dentro del proyecto seleccionado.'
+        : 'Debes asociar al menos una tarea antes de guardar el reporte.');
       return;
     }
     const markdown = buildReportMarkdown({ ...sections, evidencia: externalLinks });
@@ -160,10 +158,10 @@ export default function ReportEditor({
       <div className="editor-section space-y-3">
         <div>
           <label className="editor-label">Asociar a tareas activas</label>
-          <p className="text-sm text-slate-500 mt-1">Debes asociar al menos una tarea y solo se muestran las tareas cuyo rango incluye la fecha del reporte.</p>
+          <p className="text-sm text-slate-500 mt-1">Debes asociar al menos una tarea. Para depuración, aquí se listan las tareas asociadas a tu usuario dentro del proyecto seleccionado, sin filtrar por fechas.</p>
         </div>
         {eligibleTasks.length === 0 ? (
-          <div className="empty-state"><h3>Sin tareas elegibles</h3><p>No hay tareas activas para esta fecha en el proyecto seleccionado, así que no podrás guardar el reporte hasta que exista al menos una tarea vigente.</p></div>
+          <div className="empty-state"><h3>Sin tareas disponibles</h3><p>No se encontraron tareas asociadas a tu usuario dentro del proyecto seleccionado.</p></div>
         ) : (
           <div className="grid gap-2">
             {eligibleTasks.map((task) => (
