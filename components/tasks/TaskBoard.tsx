@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { GroupRole } from '../../lib/api';
+import { canLeadProject, canManageProject } from '../../lib/permissions';
 import { createTaskInAnySource, fetchTasksFromAnySource, TaskAssignee, TaskItem, TaskScore, TaskStatus, TaskSubtask, updateTaskInAnySource } from '../../lib/tasks';
 
 type MembershipProject = {
@@ -56,14 +57,6 @@ const emptyForm = {
   endDate: '',
   subtasksText: '',
 };
-
-function canManageProject(projectRoles: GroupRole[]) {
-  return projectRoles.includes('MENTOR') || projectRoles.includes('LIDER');
-}
-
-function canLeadProject(projectRoles: GroupRole[]) {
-  return projectRoles.includes('LIDER');
-}
 
 function subtasksToText(subtasks?: TaskSubtask[]) {
   return (subtasks || []).map((item) => item.title).join('\n');
@@ -130,6 +123,11 @@ export default function TaskBoard({ currentUserId, currentUserName, currentUserE
     [form.subgroupId, memberDirectory],
   );
 
+  const manageableProjectIds = useMemo(
+    () => new Set(projects.filter((project) => isGodAdmin || canManageProject(project.roles)).map((project) => project.subgroupId)),
+    [isGodAdmin, projects],
+  );
+
   useEffect(() => {
     if (!form.subgroupId) return;
     if (!availableAssignees.some((member) => member.id === form.assigneeId)) {
@@ -140,20 +138,21 @@ export default function TaskBoard({ currentUserId, currentUserName, currentUserE
   const visibleTasks = useMemo(() => {
     return tasks.filter((task) => {
       const assignedToMe = isTaskAssignedToCurrentUser(task, currentUserId, currentUserEmail);
-      const canSee = isGodAdmin || assignedToMe || task.mentorOrLeaderIds.includes(currentUserId);
+      const canManageTask = isGodAdmin || manageableProjectIds.has(task.subgroupId);
+      const canSee = canManageTask || assignedToMe || task.mentorOrLeaderIds.includes(currentUserId);
       if (!canSee) return false;
       if (viewMode === 'mine' && !assignedToMe) return false;
-      if (viewMode === 'managed' && !task.mentorOrLeaderIds.includes(currentUserId) && !isGodAdmin) return false;
+      if (viewMode === 'managed' && !canManageTask) return false;
       if (statusFilter && task.status !== statusFilter) return false;
       if (projectFilter && task.subgroupId !== projectFilter) return false;
       if (memberFilter && task.assigneeId !== memberFilter) return false;
       return true;
     });
-  }, [tasks, currentUserEmail, currentUserId, isGodAdmin, memberFilter, projectFilter, statusFilter, viewMode]);
+  }, [tasks, currentUserEmail, currentUserId, isGodAdmin, manageableProjectIds, memberFilter, projectFilter, statusFilter, viewMode]);
 
   const reviewableTasks = useMemo(
-    () => visibleTasks.filter((task) => isGodAdmin || leaderProjectIds.has(task.subgroupId)),
-    [isGodAdmin, leaderProjectIds, visibleTasks],
+    () => tasks.filter((task) => isGodAdmin || leaderProjectIds.has(task.subgroupId)),
+    [isGodAdmin, leaderProjectIds, tasks],
   );
 
   const canSeeReviewTab = useMemo(() => {
@@ -278,7 +277,7 @@ export default function TaskBoard({ currentUserId, currentUserName, currentUserE
     <div className="space-y-6">
       <div className="module-tabs">
         <button type="button" className={activeTab === 'overview' ? 'active' : ''} onClick={() => setActiveTab('overview')}>Visualización de tareas</button>
-        <button type="button" className={activeTab === 'assign' ? 'active' : ''} onClick={() => setActiveTab('assign')}>Asignación</button>
+        {manageableProjects.length > 0 && <button type="button" className={activeTab === 'assign' ? 'active' : ''} onClick={() => setActiveTab('assign')}>Asignación</button>}
         {canSeeReviewTab && <button type="button" className={activeTab === 'review' ? 'active' : ''} onClick={() => setActiveTab('review')}>Calificación</button>}
       </div>
 
@@ -333,8 +332,8 @@ export default function TaskBoard({ currentUserId, currentUserName, currentUserE
               {loading && <p className="text-sm text-slate-500">Cargando tareas...</p>}
               {!loading && visibleTasks.length === 0 && <div className="empty-state"><h3>No hay tareas para este filtro</h3><p>Cambia la vista o asigna nuevas tareas desde la pestaña correspondiente.</p></div>}
               {visibleTasks.map((task) => {
-                const canUpdate = isGodAdmin || isTaskAssignedToCurrentUser(task, currentUserId, currentUserEmail) || task.mentorOrLeaderIds.includes(currentUserId);
-                const canManageStructure = canUpdate;
+                const canUpdate = isGodAdmin || isTaskAssignedToCurrentUser(task, currentUserId, currentUserEmail) || manageableProjectIds.has(task.subgroupId) || task.mentorOrLeaderIds.includes(currentUserId);
+                const canManageStructure = isGodAdmin || manageableProjectIds.has(task.subgroupId);
                 const isEditing = editingTaskId === task.id && !!editingForm;
                 return (
                   <article key={task.id} className="task-card space-y-4">
@@ -419,7 +418,7 @@ export default function TaskBoard({ currentUserId, currentUserName, currentUserE
         </section>
       )}
 
-      {activeTab === 'assign' && (
+      {activeTab === 'assign' && manageableProjects.length > 0 && (
         <section>
           <div className="card space-y-4">
             <div>

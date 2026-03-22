@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ReportApiModel, reportsApi, subgroupsApi } from '../../../../lib/api';
+import { GroupRole, ReportApiModel, reportsApi, subgroupsApi } from '../../../../lib/api';
 import { formatPeruDateTime } from '../../../../lib/datetime';
 import ReportViewer from '../../../../components/reports/ReportViewer';
 import ReportEditor from '../../../../components/reports/ReportEditor';
@@ -11,9 +11,10 @@ import CommentSection from '../../../../components/reports/CommentSection';
 import { useAuthStore } from '../../../../store/authStore';
 import { fetchTasksFromAnySource, TaskItem } from '../../../../lib/tasks';
 import { getLinkedTaskIds, setLinkedTaskIds } from '../../../../lib/reportTaskLinks';
+import { canManageProject, canManageSubgroup } from '../../../../lib/permissions';
 
 type ReportDetail = ReportApiModel;
-type EditableSubgroup = { subgroupId: string; subgroup?: { name?: string; code?: string } };
+type EditableSubgroup = { subgroupId: string; subgroup?: { name?: string; code?: string }; roles?: GroupRole[] };
 
 const getEditedStorageKey = (id: string) => `report-edited-at:${id}`;
 
@@ -92,7 +93,13 @@ export default function ReportDetailPage() {
     return matched?.subgroup?.name || matched?.subgroup?.code || report?.subgroup?.name || report?.subgroup?.code || 'Subgrupo';
   }, [editSubgroupId, mySubgroups, report?.subgroup?.code, report?.subgroup?.name]);
 
-  const editorTasks = useMemo(() => tasks.filter((task) => task.subgroupId === (editSubgroupId || report?.subgroup?.id || '') && (user?.isGodAdmin || task.assigneeId === user?.id || (!!user?.email && task.assigneeEmail === user.email))), [editSubgroupId, report?.subgroup?.id, tasks, user?.email, user?.id, user?.isGodAdmin]);
+  const canManageEditedSubgroup = useMemo(() => {
+    const subgroupId = editSubgroupId || report?.subgroup?.id;
+    const localRoles = mySubgroups.find((item) => item.subgroupId === subgroupId)?.roles || [];
+    return !!user?.isGodAdmin || canManageProject(localRoles) || canManageSubgroup(user, subgroupId);
+  }, [editSubgroupId, mySubgroups, report?.subgroup?.id, user]);
+
+  const editorTasks = useMemo(() => tasks.filter((task) => task.subgroupId === (editSubgroupId || report?.subgroup?.id || '') && (canManageEditedSubgroup || task.assigneeId === user?.id || (!!user?.email && task.assigneeEmail === user.email))), [canManageEditedSubgroup, editSubgroupId, report?.subgroup?.id, tasks, user?.email, user?.id]);
 
   const relatedTasks = useMemo(() => {
     const linkedTaskIds = report?.taskIds || [];
