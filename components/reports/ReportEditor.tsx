@@ -2,6 +2,7 @@
 
 import { FormEvent, useMemo, useState } from 'react';
 import { buildReportMarkdown, parseEvidenceFromInput, parseReportMarkdown, ReportSections } from '../../lib/reportSections';
+import { TaskItem } from '../../lib/tasks';
 import FileUploadField from './FileUploadField';
 
 type ReportEditorData = {
@@ -9,6 +10,8 @@ type ReportEditorData = {
   markdown: string;
   comments: string;
   externalLinks: string;
+  reportDate: string;
+  taskIds: string[];
   attachments?: FileList | null;
 };
 
@@ -19,6 +22,9 @@ type Props = {
   initialComments?: string;
   initialExternalLinks?: string[];
   initialLinks?: string[];
+  initialReportDate?: string;
+  initialTaskIds?: string[];
+  availableTasks?: TaskItem[];
   saving?: boolean;
   showFiles?: boolean;
   onSubmit: (payload: ReportEditorData) => Promise<void> | void;
@@ -32,6 +38,16 @@ const emptySections: ReportSections = {
   evidencia: [],
 };
 
+function todayValue() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function isTaskEligibleForReport(task: TaskItem, reportDate: string) {
+  if (!reportDate) return true;
+  const day = reportDate.slice(0, 10);
+  return task.startDate <= day && task.endDate >= day;
+}
+
 export default function ReportEditor({
   mode = 'create',
   initialTitle = '',
@@ -39,6 +55,9 @@ export default function ReportEditor({
   initialComments = '',
   initialExternalLinks = [],
   initialLinks = [],
+  initialReportDate,
+  initialTaskIds = [],
+  availableTasks = [],
   saving = false,
   showFiles = true,
   onSubmit,
@@ -48,11 +67,17 @@ export default function ReportEditor({
 
   const [title, setTitle] = useState(initialTitle);
   const [comments, setComments] = useState(initialComments);
+  const [reportDate, setReportDate] = useState((initialReportDate || todayValue()).slice(0, 10));
+  const [taskIds, setTaskIds] = useState<string[]>(initialTaskIds);
   const [sections, setSections] = useState<ReportSections>(initialMarkdown ? parsed : emptySections);
   const [externalLinks, setExternalLinks] = useState<string[]>(Array.from(new Set([...initialExternalLinks, ...initialLinks])));
   const [newLink, setNewLink] = useState('');
 
   const label = submitLabel || (mode === 'edit' ? 'Guardar edición' : 'Guardar reporte');
+  const eligibleTasks = useMemo(
+    () => availableTasks.filter((task) => isTaskEligibleForReport(task, reportDate)),
+    [availableTasks, reportDate],
+  );
 
   const addLink = () => {
     const links = parseEvidenceFromInput(newLink);
@@ -67,6 +92,10 @@ export default function ReportEditor({
     setSections((prev) => ({ ...prev, evidencia: prev.evidencia.filter((item) => item !== link) }));
   };
 
+  const toggleTask = (taskId: string) => {
+    setTaskIds((prev) => (prev.includes(taskId) ? prev.filter((item) => item !== taskId) : [...prev, taskId]));
+  };
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     const markdown = buildReportMarkdown({ ...sections, evidencia: externalLinks });
@@ -75,20 +104,52 @@ export default function ReportEditor({
       markdown,
       comments,
       externalLinks: externalLinks.join(', '),
+      reportDate,
+      taskIds,
       attachments: null,
     });
   };
 
   return (
     <form onSubmit={handleSubmit} className="report-editor space-y-5">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-slate-900">{mode === 'edit' ? 'Editar reporte' : 'Nuevo reporte'}</h2>
-        <p className="text-sm text-slate-500">Formato guiado por bloques para mantener consistencia.</p>
-      </div>
-
       <div className="editor-section">
         <label className="editor-label">Título del reporte</label>
         <input className="input" placeholder="Título" value={title} onChange={(e) => setTitle(e.target.value)} required />
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="editor-section">
+          <label className="editor-label">Fecha del reporte</label>
+          <input className="input" type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} required />
+        </div>
+        <div className="editor-section">
+          <label className="editor-label">Comentarios adicionales</label>
+          <input className="input" placeholder="Notas breves para revisión" value={comments} onChange={(e) => setComments(e.target.value)} />
+        </div>
+      </div>
+
+      <div className="editor-section space-y-3">
+        <div>
+          <label className="editor-label">Asociar a tareas activas</label>
+          <p className="text-sm text-slate-500 mt-1">Solo se muestran tareas cuyo rango incluye la fecha del reporte.</p>
+        </div>
+        {eligibleTasks.length === 0 ? (
+          <div className="empty-state"><h3>Sin tareas elegibles</h3><p>No hay tareas activas para esta fecha en el proyecto seleccionado.</p></div>
+        ) : (
+          <div className="grid gap-2">
+            {eligibleTasks.map((task) => (
+              <label key={task.id} className={`rounded-2xl border px-4 py-3 text-sm ${taskIds.includes(task.id) ? 'border-blue-500 bg-blue-50 text-blue-900' : 'border-slate-200 bg-white text-slate-700'}`}>
+                <div className="flex items-start gap-3">
+                  <input type="checkbox" checked={taskIds.includes(task.id)} onChange={() => toggleTask(task.id)} className="mt-1" />
+                  <div>
+                    <p className="font-medium">{task.title}</p>
+                    <p className="text-xs text-slate-500 mt-1">{task.assigneeName} · {task.startDate} → {task.endDate}</p>
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -131,12 +192,6 @@ export default function ReportEditor({
           }}
         />
       )}
-
-      <div className="editor-section">
-        <label className="editor-label">Comentarios adicionales</label>
-        <input className="input" placeholder="Notas breves para revisión" value={comments} onChange={(e) => setComments(e.target.value)} />
-      </div>
-
 
       <button disabled={saving} className="btn-primary disabled:opacity-60">{saving ? 'Guardando...' : label}</button>
     </form>
