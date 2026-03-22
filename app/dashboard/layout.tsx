@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '../../store/authStore';
 import { authApi, GROUP_ROLE_LABELS } from '../../lib/api';
-import { LayoutDashboard, FileText, Calendar, Users, LogOut, ChevronRight, Shield, FolderKanban } from 'lucide-react';
+import { LayoutDashboard, FileText, Calendar, Users, LogOut, ChevronRight, Shield, FolderKanban, CheckSquare } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -21,6 +21,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const base = [
       { href: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
       { href: '/dashboard/reports', label: 'Reportes', icon: FileText },
+      { href: '/dashboard/tasks', label: 'Tareas', icon: CheckSquare },
       { href: '/dashboard/calendar', label: 'Calendario', icon: Calendar },
       { href: '/dashboard/members', label: 'Miembros', icon: Users },
     ];

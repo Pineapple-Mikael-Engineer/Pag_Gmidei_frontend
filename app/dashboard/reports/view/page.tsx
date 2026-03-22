@@ -75,10 +75,13 @@ export default function ReportDetailPage() {
 
   return (
     <div className="page-shell space-y-6">
-      <div className="card bg-gradient-to-r from-white to-slate-50/80">
-        <p className="section-title">Detalle de reporte</p>
-        <p className="text-sm text-slate-500">Vista enriquecida con markdown mejorado, evidencia y comentarios tipo timeline.</p>
-      </div>
+      <section className="hero-surface">
+        <div>
+          <p className="section-title">Detalle</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Reporte enriquecido</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">La lectura se divide por bloques, evidencia y conversación para que el seguimiento del informe se sienta más cercano a una revisión real.</p>
+        </div>
+      </section>
       <Link href="/dashboard/reports" className="text-blue-600 hover:underline text-sm">
         ← Volver a reportes
       </Link>
@@ -90,16 +93,22 @@ export default function ReportDetailPage() {
         <p>No se encontró el reporte.</p>
       ) : (
         <>
-          <div className="card space-y-5 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.9)]">
-            <div className="flex justify-between gap-3">
-              <div>
-                <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{report.title}</h1>
-                <p className="text-sm text-slate-500 mt-1">
-                  {report.author.fullName} · {report.subgroup?.name || report.subgroup?.code || 'Subgrupo'} · {formatPeruDateTime(report.reportDate)}
-                </p>
-                {(report.updatedAt || localEditedAt) && (
-                  <p className="text-xs text-slate-400 mt-1">Editado el: {formatPeruDateTime(report.updatedAt || localEditedAt)}</p>
-                )}
+          <div className="card space-y-6 report-detail-shell">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="badge-link">{report.subgroup?.name || report.subgroup?.code || 'Subgrupo'}</span>
+                  <span className="badge-muted">{report.author.fullName}</span>
+                </div>
+                <div>
+                  <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{report.title}</h1>
+                  <p className="text-sm text-slate-500 mt-2">
+                    {report.author.fullName} · {report.subgroup?.name || report.subgroup?.code || 'Subgrupo'} · {formatPeruDateTime(report.reportDate)}
+                  </p>
+                  {(report.updatedAt || localEditedAt) && (
+                    <p className="text-xs text-slate-400 mt-1">Editado el: {formatPeruDateTime(report.updatedAt || localEditedAt)}</p>
+                  )}
+                </div>
               </div>
               {canEdit ? (
                 <button className="btn-secondary h-fit" onClick={() => setEditing((prev) => !prev)}>
@@ -169,8 +178,11 @@ export default function ReportDetailPage() {
             )}
 
             {(report.attachments || []).length > 0 && (
-              <div>
-                <p className="text-sm font-medium mb-2">Archivos adjuntos</p>
+              <div className="attachment-grid">
+                <div>
+                  <p className="section-title">Archivos</p>
+                  <h3 className="text-lg font-semibold text-slate-900">Adjuntos del reporte</h3>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {(report.attachments || []).map((a) => (
                     <button key={a.id} type="button" onClick={() => handleDownload(a.id, a.originalName)} className="btn-secondary text-sm">
