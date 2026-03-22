@@ -1,18 +1,18 @@
 # Pag_Gmidei Frontend
 
-Frontend en **Next.js** para la gestión de proyectos, reportes, miembros, calendario y tareas. Esta guía funciona como documento vivo del frontend: describe la navegación, la responsabilidad de cada pantalla y el tipo de datos que el backend debe entregar o recibir.
+Frontend en **Next.js** para la gestión de proyectos, reportes, miembros, calendario y tareas. Este README funciona como documento vivo del frontend: describe la navegación, la organización visual de cada módulo y el contrato de datos que el backend necesita conocer para integrarse sin ambigüedad.
 
-> **Nota operativa:** este README debe actualizarse cada vez que cambie la arquitectura visible de la app, la navegación o el contrato esperado con backend.
+> **Nota operativa:** cada vez que cambie una pantalla, una pestaña o el flujo de datos con backend, este archivo debe actualizarse.
 
 ---
 
 ## 1. Stack y propósito
 
 - **Framework:** Next.js App Router.
-- **Estado de autenticación:** Zustand (`store/authStore`).
-- **Cliente HTTP:** Axios (`lib/api.ts`).
-- **Persistencia auxiliar local:** `localStorage` para comentarios y tareas cuando el backend aún no tiene endpoints específicos o cuando falla la sincronización.
-- **Objetivo del producto:** centralizar seguimiento operativo de subgrupos/proyectos universitarios con foco en reportes, tareas, miembros y coordinación mentor/líder/miembro.
+- **Estado global/autenticación:** Zustand.
+- **Cliente HTTP:** Axios.
+- **Persistencia auxiliar local actual:** `localStorage` para comentarios, calificación de reportes y módulo de tareas mientras algunos endpoints no existan en backend.
+- **Objetivo del producto:** centralizar seguimiento operativo y evaluación de subgrupos/proyectos con foco en reportes, tareas y coordinación entre miembro, líder y mentor.
 
 ---
 
@@ -21,130 +21,143 @@ Frontend en **Next.js** para la gestión de proyectos, reportes, miembros, calen
 ### Rutas públicas
 
 - `/`
-  - Landing inicial.
+  - Landing.
 - `/auth/login`
   - Inicio de sesión.
 - `/auth/register`
-  - Registro de usuario.
+  - Registro.
 
 ### Rutas privadas (`/dashboard`)
 
 - `/dashboard`
   - Resumen principal con métricas, accesos rápidos y reportes recientes.
 - `/dashboard/reports`
-  - Centro de reportes.
-  - Incluye creación de informe, filtros avanzados y timeline visual.
+  - Centro de reportes dividido por pestañas.
 - `/dashboard/reports/view?id=:reportId`
-  - Detalle del reporte.
-  - Muestra bloques del informe, evidencia, adjuntos y conversación de comentarios.
+  - Vista detallada del reporte con lectura, evidencia y comentarios.
 - `/dashboard/tasks`
-  - Nuevo módulo de tareas.
-  - Permite asignar tareas por rango de fechas y revisar cumplimiento.
+  - Centro de tareas dividido por pestañas.
 - `/dashboard/calendar`
-  - Calendario operativo del proyecto.
+  - Calendario del proyecto.
 - `/dashboard/members`
-  - Vista de miembros por proyecto y sus reportes.
+  - Miembros y seguimiento por proyecto.
 - `/dashboard/subgroups`
-  - Gestión de proyectos/subgrupos para usuarios con permisos de mentor o superiores.
+  - Gestión de proyectos/subgrupos.
 - `/dashboard/admin`
   - Panel administrativo global.
 
-### Lógica de visibilidad importante
-
-- **Reportes:** visibles según respuesta del backend y filtros aplicados en frontend.
-- **Tareas:** en frontend se renderizan solo para:
-  - miembro asignado,
-  - mentor del proyecto,
-  - líder del proyecto,
-  - administrador global.
-
 ---
 
-## 3. Distribución funcional de la interfaz
+## 3. Organización funcional por módulos y pestañas
+
+La idea actual del frontend es **evitar saturación**: cada módulo principal concentra una responsabilidad general, pero sus herramientas se separan por pestañas internas.
 
 ### 3.1 Dashboard principal
 
-Resume el estado del usuario con:
+Muestra:
 - total de reportes,
 - total de miembros,
-- cantidad de tareas visibles para el usuario,
-- accesos rápidos hacia reportes y tareas,
-- lista corta de reportes recientes.
+- total de tareas visibles para el usuario,
+- accesos rápidos a reportes y tareas,
+- reportes recientes.
 
-### 3.2 Módulo de reportes
+### 3.2 Módulo `Reportes`
 
-#### Vista `/dashboard/reports`
+Ruta: `/dashboard/reports`
 
-Se divide en dos zonas:
-1. **Creación de reporte**
+#### Pestañas actuales
+
+1. **Creación**
    - selección de proyecto,
-   - redacción estructurada por bloques,
-   - links de evidencia,
-   - comentarios adicionales,
-   - carga de archivos vía backend.
-2. **Explorador de informes**
-   - búsqueda por texto,
+   - edición estructurada del reporte,
+   - evidencia,
+   - comentarios adicionales.
+
+2. **Visualización**
+   - listado de reportes,
+   - filtro por texto,
    - filtro por proyecto,
    - filtro por miembro,
-   - filtro por estado,
-   - filtro por rango de fechas,
-   - opción “solo mis reportes”.
+   - filtro por fechas,
+   - vista enriquecida por tarjeta.
 
-#### Vista `/dashboard/reports/view`
+3. **Calificación**
+   - revisión separada del flujo de lectura,
+   - estado de revisión (`pendiente`, `en revisión`, `aprobado`, `requiere cambios`),
+   - etiquetas rápidas,
+   - checklist de calidad,
+   - nota de calificación.
 
-Presenta el informe con mejor jerarquía:
+#### Vista detalle del reporte
+
+Ruta: `/dashboard/reports/view?id=:reportId`
+
+Muestra:
 - resumen por bloques (`Avance`, `Problemas`, `Siguiente paso`),
-- cuerpo renderizado del markdown,
+- markdown renderizado,
 - panel lateral de evidencia,
-- adjuntos descargables,
-- comentarios tipo conversación,
-- edición del reporte si el usuario es autor o administrador.
+- adjuntos,
+- comentarios en formato conversación,
+- edición para autor/admin.
 
-### 3.3 Módulo de tareas
+### 3.3 Módulo `Tareas`
 
-#### Objetivo
+Ruta: `/dashboard/tasks`
 
-Dar seguimiento a trabajo operativo que no necesariamente entra como reporte diario/semanal.
+#### Pestañas actuales
 
-#### Flujo actual del frontend
+1. **Visualización de tareas**
+   - tareas visibles del usuario,
+   - resumen de cumplimiento,
+   - filtros por proyecto, miembro y estado,
+   - bitácora operativa.
 
-- Un mentor/líder crea una tarea.
-- La tarea se relaciona con:
-  - proyecto/subgrupo,
-  - miembro responsable,
-  - fecha de inicio,
-  - fecha de fin,
-  - criterio o descripción,
-  - estado,
-  - bitácora de seguimiento.
-- La tarea se muestra únicamente a quienes deben verla.
+2. **Asignación**
+   - creación de tareas,
+   - definición de responsable,
+   - ventana de fechas,
+   - criterio o descripción de cumplimiento.
 
-#### Observación técnica
+3. **Calificación**
+   - validación y revisión separadas del flujo operativo,
+   - etiquetas rápidas,
+   - nivel de cumplimiento,
+   - nota de revisión,
+   - checkbox de validación del líder.
 
-Actualmente el módulo usa persistencia local (`localStorage`) en `lib/tasks.ts`. Esto sirve como base visual/funcional mientras el backend expone endpoints reales.
+#### Reglas de visibilidad de tareas
 
-### 3.4 Módulo de miembros
+Una tarea se renderiza solo para:
+- el miembro asignado,
+- líderes del proyecto,
+- mentores del proyecto,
+- administrador global.
 
-- Carga los miembros del proyecto seleccionado.
-- Permite filtrar reportes por miembro.
-- Sirve como vista de seguimiento de actividad del proyecto.
+#### Regla especial de validación
 
-### 3.5 Calendario
+La casilla **"Validada por líder"** está pensada para que la active el líder del proyecto (y actualmente también el administrador global, si existe ese caso de supervisión).
 
-- Consume eventos del backend.
-- Relaciona eventos con subgrupos/proyectos.
+### 3.4 Módulo `Miembros`
+
+- carga miembros del proyecto,
+- permite seguimiento de reportes por miembro,
+- sirve como vista rápida de actividad de equipo.
+
+### 3.5 Módulo `Calendario`
+
+- consume eventos del backend,
+- los relaciona con subgrupos/proyectos.
 
 ---
 
 ## 4. Contrato de datos esperado con backend
 
-Esta sección está pensada para alinear frontend y backend.
+Esta sección alinea frontend y backend.
 
 ### 4.1 Autenticación
 
 #### Login
 - **Ruta:** `POST /auth/login`
-- **Payload enviado:**
 
 ```json
 {
@@ -155,7 +168,6 @@ Esta sección está pensada para alinear frontend y backend.
 
 #### Register
 - **Ruta:** `POST /auth/register`
-- **Payload enviado:**
 
 ```json
 {
@@ -167,36 +179,32 @@ Esta sección está pensada para alinear frontend y backend.
 
 #### Respuesta esperada
 
-- `accessToken`
-- `refreshToken`
-- datos del usuario autenticado, incluyendo membresías por subgrupo.
-
-### 4.2 Usuario autenticado
-
-El frontend espera algo equivalente a:
-
 ```json
 {
-  "id": "user-id",
-  "email": "usuario@correo.com",
-  "fullName": "Nombre Apellido",
-  "memberships": [
-    {
-      "subgroupId": "subgroup-id",
-      "subgroupName": "Proyecto A",
-      "subgroupCode": "PA-01",
-      "roles": ["MIEMBRO", "LIDER"]
-    }
-  ],
-  "isGodAdmin": false
+  "accessToken": "...",
+  "refreshToken": "...",
+  "user": {
+    "id": "user-id",
+    "email": "usuario@correo.com",
+    "fullName": "Nombre Apellido",
+    "memberships": [
+      {
+        "subgroupId": "subgroup-id",
+        "subgroupName": "Proyecto A",
+        "subgroupCode": "PA-01",
+        "roles": ["MIEMBRO", "LIDER"]
+      }
+    ],
+    "isGodAdmin": false
+  }
 }
 ```
 
-### 4.3 Reportes
+### 4.2 Reportes
 
 #### Obtener lista
 - **Ruta:** `GET /reports`
-- **Query params usados por frontend:**
+- **Query params usados:**
   - `authorId`
   - `subgroupId`
   - `status`
@@ -208,7 +216,7 @@ El frontend espera algo equivalente a:
 
 #### Crear reporte
 - **Ruta:** `POST /reports`
-- **Formato enviado:** `multipart/form-data`
+- **Formato:** `multipart/form-data`
 - **Campos enviados:**
   - `title`
   - `markdown`
@@ -221,11 +229,11 @@ El frontend espera algo equivalente a:
 - **Ruta:** `GET /reports/:id`
 
 #### Editar reporte
-- **Rutas usadas por frontend:**
+- **Rutas usadas:**
   - `PUT /reports/:id`
-  - fallback: `PATCH /reports/:id`
+  - fallback `PATCH /reports/:id`
 
-#### Modelo que el frontend espera recibir
+#### Modelo esperado
 
 ```json
 {
@@ -258,11 +266,10 @@ El frontend espera algo equivalente a:
 }
 ```
 
-### 4.4 Comentarios de reportes
+### 4.3 Comentarios de reportes
 
 #### Crear comentario
 - **Ruta:** `POST /comments`
-- **Payload enviado:**
 
 ```json
 {
@@ -273,7 +280,6 @@ El frontend espera algo equivalente a:
 
 #### Editar comentario
 - **Ruta:** `PUT /comments/:commentId`
-- **Payload enviado:**
 
 ```json
 {
@@ -281,22 +287,36 @@ El frontend espera algo equivalente a:
 }
 ```
 
-#### Respuesta ideal esperada
+### 4.4 Calificación de reportes
+
+#### Estado actual
+
+La calificación de reportes está implementada en frontend con persistencia local en `localStorage` (`lib/reportReviews.ts`) mientras no exista un backend dedicado.
+
+#### Modelo que hoy usa el frontend
 
 ```json
 {
-  "id": "comment-id",
   "reportId": "report-id",
-  "userId": "user-id",
-  "content": "Texto del comentario",
-  "createdAt": "2026-03-22T00:00:00.000Z",
-  "editedAt": "2026-03-22T01:00:00.000Z",
-  "user": {
-    "id": "user-id",
-    "fullName": "Nombre del autor"
+  "status": "aprobado",
+  "tags": ["Con evidencia clara", "Bien documentado"],
+  "reviewNote": "Buen avance, mantener trazabilidad.",
+  "reviewerId": "user-id",
+  "reviewerName": "Nombre revisor",
+  "reviewedAt": "2026-03-22T00:00:00.000Z",
+  "checklist": {
+    "claridad": true,
+    "evidencia": true,
+    "siguientePaso": true
   }
 }
 ```
+
+#### Recomendación backend futura
+
+- `GET /report-reviews?subgroupId=&reportId=`
+- `POST /report-reviews`
+- `PATCH /report-reviews/:reportId`
 
 ### 4.5 Subgrupos / proyectos
 
@@ -310,7 +330,7 @@ El frontend espera algo equivalente a:
 - `PATCH /subgroups/:subgroupId/members/:userId/roles`
 - `DELETE /subgroups/:subgroupId/members/:userId`
 
-#### Miembros esperados por proyecto
+#### Miembros esperados
 
 ```json
 [
@@ -338,9 +358,41 @@ El frontend espera algo equivalente a:
 
 #### Estado actual
 
-Todavía **no hay integración HTTP** para tareas en el frontend actual. La interfaz ya está construida y la persistencia temporal vive en navegador.
+El módulo visual y de calificación ya existe en frontend, pero su persistencia sigue siendo local (`lib/tasks.ts`) mientras se define el backend oficial.
 
-#### Contrato recomendado para backend
+#### Modelo actual usado por frontend
+
+```json
+{
+  "id": "task-id",
+  "title": "Preparar pruebas de integración",
+  "description": "Detalle de la tarea",
+  "subgroupId": "subgroup-id",
+  "subgroupName": "Proyecto A",
+  "assigneeId": "user-id",
+  "assigneeName": "Nombre del miembro",
+  "assigneeRole": "Miembro",
+  "mentorOrLeaderIds": ["mentor-id", "leader-id"],
+  "startDate": "2026-03-23",
+  "endDate": "2026-03-30",
+  "status": "en_progreso",
+  "progressNote": "Avance operativo",
+  "labels": ["Alta prioridad", "Requiere apoyo"],
+  "score": "parcial",
+  "reviewNote": "Falta cerrar la última validación",
+  "leaderValidation": {
+    "checked": true,
+    "reviewerId": "leader-id",
+    "reviewerName": "Líder del proyecto",
+    "reviewedAt": "2026-03-22T00:00:00.000Z"
+  },
+  "createdAt": "2026-03-22T00:00:00.000Z",
+  "updatedAt": "2026-03-22T00:00:00.000Z",
+  "completedAt": null
+}
+```
+
+#### Contrato backend recomendado
 
 ##### Crear tarea
 - **Ruta sugerida:** `POST /tasks`
@@ -356,7 +408,7 @@ Todavía **no hay integración HTTP** para tareas en el frontend actual. La inte
 }
 ```
 
-##### Listar tareas visibles para el usuario
+##### Listar tareas
 - **Ruta sugerida:** `GET /tasks`
 - **Filtros sugeridos:**
   - `subgroupId`
@@ -365,63 +417,47 @@ Todavía **no hay integración HTTP** para tareas en el frontend actual. La inte
   - `from`
   - `to`
 
-##### Actualizar estado / seguimiento
+##### Actualizar tarea o calificación
 - **Ruta sugerida:** `PATCH /tasks/:taskId`
 
 ```json
 {
-  "status": "en_progreso",
-  "progressNote": "Se completó la fase 1, faltan validaciones finales."
-}
-```
-
-##### Modelo recomendado
-
-```json
-{
-  "id": "task-id",
-  "title": "Preparar pruebas de integración",
-  "description": "Detalle de la tarea",
-  "subgroupId": "subgroup-id",
-  "subgroupName": "Proyecto A",
-  "assigneeId": "user-id",
-  "assigneeName": "Nombre del miembro",
-  "assigneeRole": "Miembro",
-  "mentorOrLeaderIds": ["mentor-id", "leader-id"],
-  "startDate": "2026-03-23",
-  "endDate": "2026-03-30",
-  "status": "pendiente",
-  "progressNote": "",
-  "createdAt": "2026-03-22T00:00:00.000Z",
-  "updatedAt": "2026-03-22T00:00:00.000Z",
-  "completedAt": null
+  "status": "completada",
+  "progressNote": "Se completó la entrega.",
+  "labels": ["Alta prioridad"],
+  "score": "cumplida",
+  "reviewNote": "Trabajo correcto",
+  "leaderValidation": {
+    "checked": true,
+    "reviewerId": "leader-id"
+  }
 }
 ```
 
 ---
 
-## 5. Archivos frontend más relevantes
+## 5. Archivos frontend relevantes
 
 - `app/dashboard/layout.tsx`
-  - navegación lateral principal.
+  - navegación lateral.
 - `app/dashboard/page.tsx`
-  - home del dashboard.
+  - dashboard principal.
 - `app/dashboard/reports/page.tsx`
-  - centro de creación y exploración de reportes.
+  - pestañas de creación, visualización y calificación de reportes.
 - `app/dashboard/reports/view/page.tsx`
-  - detalle y edición del reporte.
+  - detalle del reporte.
 - `components/reports/ReportViewer.tsx`
-  - visualización estructurada del contenido.
+  - visualización estructurada del reporte.
 - `components/reports/CommentSection.tsx`
-  - conversación de comentarios.
+  - comentarios tipo conversación.
+- `lib/reportReviews.ts`
+  - persistencia local de calificación de reportes.
 - `app/dashboard/tasks/page.tsx`
   - entrada del módulo de tareas.
 - `components/tasks/TaskBoard.tsx`
-  - tablero funcional de tareas.
-- `lib/api.ts`
-  - capa HTTP y contratos base.
+  - pestañas de visualización, asignación y calificación de tareas.
 - `lib/tasks.ts`
-  - persistencia temporal/local del módulo de tareas.
+  - persistencia local de tareas y revisión.
 
 ---
 
@@ -443,10 +479,7 @@ NEXT_PUBLIC_BASE_PATH=
 
 ## 7. Última actualización funcional
 
-### Cambio actual
-
-- Se mejoró el render visual de reportes.
-- Se añadió filtro por miembro en reportes.
-- Se rediseñó la experiencia de comentarios para parecer una conversación real.
-- Se agregó el módulo **Tareas** con asignación, rango de fechas y seguimiento local.
-- Se actualizó el dashboard inicial para enlazar mejor reportes y tareas.
+- Los módulos `Reportes` y `Tareas` fueron reorganizados en pestañas para reducir saturación visual.
+- Se añadió una capa de **calificación** para reportes con estados, etiquetas, checklist y notas.
+- Se amplió la **calificación de tareas** con etiquetas, nivel de cumplimiento y checkbox de validación del líder.
+- El README quedó alineado con este nuevo flujo para que backend sepa qué información y endpoints hacen falta.
