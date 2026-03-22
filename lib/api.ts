@@ -151,6 +151,7 @@ export const reportsApi = {
 };
 
 export const commentsApi = {
+  listByReport: (reportId: string) => api.get('/comments', { params: { reportId } }),
   create: (data: { reportId: string; content: string }) => api.post('/comments', data),
   update: (commentId: string, data: { content: string }) => api.put(`/comments/${commentId}`, data),
 };

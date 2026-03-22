@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { commentsApi } from '../../lib/api';
 import { formatPeruDateTime } from '../../lib/datetime';
 
@@ -32,29 +32,64 @@ function initials(name?: string) {
     .join('');
 }
 
+function seedFromInitialComment(reportId: string, initialComment?: string | null): CommentItem[] {
+  if (!initialComment) return [];
+  return [
+    {
+      id: 'seed-comment',
+      reportId,
+      userId: 'system',
+      authorName: 'Comentario inicial',
+      content: initialComment,
+      createdAt: new Date().toISOString(),
+    },
+  ];
+}
+
 export default function CommentSection({ reportId, currentUserId = 'me', currentUserName = 'Tú', initialComment }: Props) {
   const [draft, setDraft] = useState('');
   const [editingId, setEditingId] = useState('');
   const [editingDraft, setEditingDraft] = useState('');
   const [warning, setWarning] = useState('');
-  const [items, setItems] = useState<CommentItem[]>(() => {
-    if (typeof window === 'undefined') return [];
-    const raw = localStorage.getItem(keyOf(reportId));
-    const stored = raw ? (JSON.parse(raw) as CommentItem[]) : [];
-    if (stored.length === 0 && initialComment) {
-      return [
-        {
-          id: 'seed-comment',
-          reportId,
-          userId: 'system',
-          authorName: 'Comentario inicial',
-          content: initialComment,
-          createdAt: new Date().toISOString(),
-        },
-      ];
-    }
-    return stored;
-  });
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<CommentItem[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      setLoading(true);
+      setWarning('');
+      try {
+        const res = await commentsApi.listByReport(reportId);
+        const raw = res.data?.comments || res.data?.data || [];
+        const normalized = raw.map((comment: any) => ({
+          id: comment.id,
+          reportId: comment.reportId || reportId,
+          userId: comment.userId || comment.user?.id || 'unknown',
+          authorName: comment.user?.fullName || comment.authorName || 'Usuario',
+          content: comment.content,
+          createdAt: comment.createdAt,
+          editedAt: comment.editedAt,
+        }));
+        if (!mounted) return;
+        const next = normalized.length > 0 ? normalized : seedFromInitialComment(reportId, initialComment);
+        setItems(next);
+        localStorage.setItem(keyOf(reportId), JSON.stringify(next));
+      } catch {
+        if (!mounted) return;
+        const raw = localStorage.getItem(keyOf(reportId));
+        const stored = raw ? (JSON.parse(raw) as CommentItem[]) : [];
+        setItems(stored.length > 0 ? stored : seedFromInitialComment(reportId, initialComment));
+        setWarning('No se pudo cargar la lista pública de comentarios desde backend. Se mostró el caché local.');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      mounted = false;
+    };
+  }, [initialComment, reportId]);
 
   const orderedItems = useMemo(
     () => [...items].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
@@ -83,7 +118,7 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
       const res = await commentsApi.create({ reportId, content: draft.trim() });
       const comment = res.data?.comment || res.data?.data || fallback;
       persist([
-        ...items,
+        ...items.filter((item) => item.id !== 'seed-comment'),
         {
           id: comment.id || fallback.id,
           reportId: comment.reportId || reportId,
@@ -95,8 +130,8 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
         },
       ]);
     } catch {
-      persist([...items, fallback]);
-      setWarning('No se pudo sincronizar el comentario con backend. Se guardó localmente.');
+      persist([...items.filter((item) => item.id !== 'seed-comment'), fallback]);
+      setWarning('No se pudo sincronizar el comentario con backend. Se guardó temporalmente en local.');
     }
     setDraft('');
   };
@@ -120,9 +155,8 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
     <section className="card space-y-5">
       <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="section-title">Conversación</p>
-          <h3 className="text-xl font-semibold text-slate-900">Comentarios del reporte</h3>
-          <p className="text-sm text-slate-500 mt-1">Diseñados como una conversación real: autor visible, hora, edición y composición más clara.</p>
+          <p className="section-title">Comentarios</p>
+          <h3 className="text-xl font-semibold text-slate-900">Conversación pública del reporte</h3>
         </div>
         <div className="comment-count-pill">{orderedItems.length} comentario(s)</div>
       </div>
@@ -130,7 +164,8 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
       {warning && <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">{warning}</p>}
 
       <div className="conversation-thread">
-        {orderedItems.length === 0 && <div className="empty-state"><h3>Sin comentarios todavía</h3><p>Usa este espacio para validar hallazgos, pedir cambios o dejar contexto adicional.</p></div>}
+        {loading && <p className="text-sm text-slate-500">Cargando comentarios...</p>}
+        {!loading && orderedItems.length === 0 && <div className="empty-state"><h3>Sin comentarios todavía</h3><p>Esta conversación será visible para todos los usuarios con acceso al reporte.</p></div>}
         {orderedItems.map((item) => {
           const mine = item.userId === currentUserId;
           const isEditing = editingId === item.id;
@@ -171,9 +206,9 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
       </div>
 
       <form onSubmit={onSubmit} className="comment-composer">
-        <textarea className="input min-h-28" placeholder="Escribe un comentario útil para seguimiento, revisión o aprobación..." value={draft} onChange={(e) => setDraft(e.target.value)} />
+        <textarea className="input min-h-28" placeholder="Escribe un comentario visible para todos los usuarios que pueden ver el reporte..." value={draft} onChange={(e) => setDraft(e.target.value)} />
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-slate-400">Tip: usa este espacio para validar entregables o dejar próximos pasos.</p>
+          <p className="text-xs text-slate-400">Este espacio debe quedar sincronizado con backend para que la conversación sea compartida.</p>
           <button className="btn-primary self-end" type="submit">Enviar comentario</button>
         </div>
       </form>

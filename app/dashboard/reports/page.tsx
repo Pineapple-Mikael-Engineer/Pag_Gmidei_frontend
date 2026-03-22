@@ -123,6 +123,11 @@ export default function ReportsPage() {
     };
   }, [reportReviews, reports]);
 
+  const canSeeReviewTab = useMemo(() => {
+    if (user?.isGodAdmin) return true;
+    return (user?.memberships || []).some((membership) => membership.roles.some((role) => role === 'LIDER' || role === 'MENTOR'));
+  }, [user?.isGodAdmin, user?.memberships]);
+
   const reviewSummary = useMemo(() => {
     return {
       pending: reports.filter((report) => (reportReviews.get(report.id)?.status || 'pendiente') === 'pendiente').length,
@@ -169,24 +174,23 @@ export default function ReportsPage() {
 
   return (
     <div className="page-shell space-y-6">
-      <section className="hero-surface report-hero">
-        <div className="space-y-3">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
           <p className="section-title">Informes</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Centro de reportes</h1>
-          <p className="max-w-3xl text-sm leading-6 text-slate-600">Ahora el módulo está dividido en pestañas para separar creación, visualización y calificación, sin saturar una sola pantalla.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-950">Centro de reportes</h1>
         </div>
-        <div className="hero-metrics-grid">
-          <div className="metric-card"><span className="metric-label">Reportes visibles</span><strong className="metric-value">{summary.total}</strong></div>
-          <div className="metric-card"><span className="metric-label">Con evidencia</span><strong className="metric-value">{summary.evidence}</strong></div>
-          <div className="metric-card"><span className="metric-label">Aprobados</span><strong className="metric-value">{summary.reviewed}</strong></div>
-          <div className="metric-card"><span className="metric-label">Miembros activos</span><strong className="metric-value">{summary.members}</strong></div>
+        <div className="review-summary-strip">
+          <span>{summary.total} visibles</span>
+          <span>{summary.evidence} con evidencia</span>
+          <span>{summary.reviewed} aprobados</span>
+          <span>{summary.members} miembros</span>
         </div>
-      </section>
+      </div>
 
       <div className="module-tabs">
         <button type="button" className={activeTab === 'create' ? 'active' : ''} onClick={() => setActiveTab('create')}>Creación</button>
         <button type="button" className={activeTab === 'browse' ? 'active' : ''} onClick={() => setActiveTab('browse')}>Visualización</button>
-        <button type="button" className={activeTab === 'review' ? 'active' : ''} onClick={() => setActiveTab('review')}>Calificación</button>
+        {canSeeReviewTab && <button type="button" className={activeTab === 'review' ? 'active' : ''} onClick={() => setActiveTab('review')}>Calificación</button>}
       </div>
 
       {activeTab === 'create' && (
@@ -319,7 +323,7 @@ export default function ReportsPage() {
         </section>
       )}
 
-      {activeTab === 'review' && (
+      {canSeeReviewTab && activeTab === 'review' && (
         <section className="space-y-4">
           <div className="grid gap-3 md:grid-cols-4">
             <div className="stat-card"><span className="stat-label">Pendientes</span><strong className="stat-value">{reviewSummary.pending}</strong></div>

@@ -70,15 +70,10 @@ export default function TasksPage() {
 
   return (
     <div className="page-shell space-y-6">
-      <section className="hero-surface">
-        <div>
-          <p className="section-title">Nuevo módulo</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Tareas</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Coordina tareas por proyecto, asigna responsables por intervalo de fechas y valida su cumplimiento con una vista acotada al miembro, mentor y líder.
-          </p>
-        </div>
-      </section>
+      <div>
+        <p className="section-title">Tareas</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-950">Centro de tareas</h1>
+      </div>
 
       {loading && <div className="card"><p>Cargando contexto de tareas...</p></div>}
       {error && <div className="card"><p className="text-sm text-red-600">{error}</p></div>}

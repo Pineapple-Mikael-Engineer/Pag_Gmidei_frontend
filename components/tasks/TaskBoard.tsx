@@ -117,6 +117,11 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
     [isGodAdmin, leaderProjectIds, visibleTasks],
   );
 
+  const canSeeReviewTab = useMemo(() => {
+    if (isGodAdmin) return true;
+    return projects.some((project) => canManageProject(project.roles));
+  }, [isGodAdmin, projects]);
+
   const summary = useMemo(() => {
     const completed = visibleTasks.filter((task) => task.status === 'completada').length;
     return {
@@ -209,7 +214,7 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
       <div className="module-tabs">
         <button type="button" className={activeTab === 'overview' ? 'active' : ''} onClick={() => setActiveTab('overview')}>Visualización de tareas</button>
         <button type="button" className={activeTab === 'assign' ? 'active' : ''} onClick={() => setActiveTab('assign')}>Asignación</button>
-        <button type="button" className={activeTab === 'review' ? 'active' : ''} onClick={() => setActiveTab('review')}>Calificación</button>
+        {canSeeReviewTab && <button type="button" className={activeTab === 'review' ? 'active' : ''} onClick={() => setActiveTab('review')}>Calificación</button>}
       </div>
 
       {activeTab === 'overview' && (
@@ -372,7 +377,7 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
         </section>
       )}
 
-      {activeTab === 'review' && (
+      {canSeeReviewTab && activeTab === 'review' && (
         <section className="card space-y-4">
           <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
             <div>

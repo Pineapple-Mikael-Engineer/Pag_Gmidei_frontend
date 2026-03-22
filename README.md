@@ -483,3 +483,22 @@ NEXT_PUBLIC_BASE_PATH=
 - Se añadió una capa de **calificación** para reportes con estados, etiquetas, checklist y notas.
 - Se amplió la **calificación de tareas** con etiquetas, nivel de cumplimiento y checkbox de validación del líder.
 - El README quedó alineado con este nuevo flujo para que backend sepa qué información y endpoints hacen falta.
+
+
+---
+
+## 8. Ajustes finales sugeridos para backend
+
+Estos puntos son necesarios o muy recomendables para que el frontend cumpla exactamente con lo pedido:
+
+1. **Comentarios públicos por reporte**
+   - El frontend ya intenta consumir `GET /comments?reportId=:id` para mostrar una conversación compartida.
+   - Si ese endpoint no existe, la UI cae a caché local y la conversación no será realmente pública entre usuarios.
+
+2. **Edición del grupo del reporte**
+   - El frontend ahora envía `subgroupId` al editar un reporte (`PUT /reports/:id` o `PATCH /reports/:id`).
+   - Backend debe aceptar ese campo para permitir mover un reporte entre proyectos cuando el usuario tenga permisos.
+
+3. **Persistencia de calificación**
+   - Hoy la calificación de reportes y tareas sigue siendo local.
+   - Si se quiere consistencia multiusuario, backend debería exponer endpoints de revisión/calificación para ambos módulos.
