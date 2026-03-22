@@ -129,6 +129,15 @@ La acción **"Editar tarea"** (título, descripción, fechas y subtareas) se hab
 
 El miembro asignado sigue pudiendo mover el estado y escribir en la bitácora operativa, pero no modificar la estructura de la tarea si no tiene uno de esos roles.
 
+#### Regla de edición de tarea
+
+La acción **"Editar tarea"** (título, descripción, fechas y subtareas) se habilita únicamente para:
+- líderes del proyecto,
+- mentores del proyecto,
+- administrador global.
+
+El miembro asignado sigue pudiendo mover el estado y escribir en la bitácora operativa, pero no modificar la estructura de la tarea si no tiene uno de esos roles.
+
 3. **Calificación**
    - validación y revisión separadas del flujo operativo,
    - etiquetas rápidas,
