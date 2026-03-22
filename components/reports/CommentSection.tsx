@@ -30,6 +30,11 @@ function initials(name?: string) {
     .join('');
 }
 
+function normalizeComparableId(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  return String(value).trim();
+}
+
 function seedFromInitialComment(reportId: string, initialComment?: string | null): CommentItem[] {
   if (!initialComment) return [];
   return [
@@ -44,33 +49,61 @@ function seedFromInitialComment(reportId: string, initialComment?: string | null
   ];
 }
 
-function normalizeComments(rawComments: any[], reportId: string): CommentItem[] {
-  return rawComments
-    .filter(Boolean)
-    .map((comment: any, index: number) => ({
-      id: comment.id || `comment-${index}`,
-      reportId: comment.reportId || reportId,
-      userId: comment.userId || comment.user?.id || comment.authorId || 'unknown',
-      authorName: comment.user?.fullName || comment.authorName || comment.author?.fullName || 'Usuario',
-      content: comment.content || comment.text || comment.body || '',
-      createdAt: comment.createdAt || comment.date || new Date().toISOString(),
-      editedAt: comment.editedAt,
-    }))
-    .filter((comment) => comment.content.trim().length > 0);
-}
-
-function extractCommentsFromReportPayload(payload: any, reportId: string, initialComment?: string | null): CommentItem[] {
-  const possibleArrays = [
+function extractCommentCollections(payload: any): any[][] {
+  const possibleCollections = [
+    payload,
     payload?.comments,
+    payload?.comment,
     payload?.data,
+    payload?.data?.comments,
+    payload?.data?.comment,
+    payload?.data?.items,
+    payload?.data?.rows,
+    payload?.items,
+    payload?.rows,
+    payload?.results,
     payload?.report?.comments,
     payload?.report?.commentList,
     payload?.report?.commentsList,
     payload?.report?.thread,
     payload?.report?.conversation,
-  ].filter(Array.isArray) as any[];
+  ];
 
-  for (const candidate of possibleArrays) {
+  return possibleCollections
+    .map((candidate) => (Array.isArray(candidate) ? candidate : candidate ? [candidate] : []))
+    .filter((candidate) => candidate.length > 0);
+}
+
+function normalizeComments(rawComments: any[], reportId: string): CommentItem[] {
+  const expectedReportId = normalizeComparableId(reportId);
+
+  return rawComments
+    .filter(Boolean)
+    .map((comment: any, index: number) => {
+      const linkedReportId =
+        comment.reportId ||
+        comment.report?.id ||
+        comment.report?._id ||
+        comment.report?.reportId ||
+        comment.report_id ||
+        reportId;
+
+      return {
+        id: normalizeComparableId(comment.id || comment._id || comment.commentId || `comment-${index}`),
+        reportId: normalizeComparableId(linkedReportId) || expectedReportId,
+        userId: normalizeComparableId(comment.userId || comment.user?.id || comment.authorId || comment.author?.id || 'unknown'),
+        authorName: comment.user?.fullName || comment.authorName || comment.author?.fullName || comment.user?.name || 'Usuario',
+        content: String(comment.content || comment.text || comment.body || '').trim(),
+        createdAt: comment.createdAt || comment.date || comment.updatedAt || new Date().toISOString(),
+        editedAt: comment.editedAt,
+      };
+    })
+    .filter((comment) => comment.content.length > 0)
+    .filter((comment) => !comment.reportId || comment.reportId === expectedReportId);
+}
+
+function extractCommentsFromPayload(payload: any, reportId: string, initialComment?: string | null): CommentItem[] {
+  for (const candidate of extractCommentCollections(payload)) {
     const normalized = normalizeComments(candidate, reportId);
     if (normalized.length > 0) return normalized;
   }
@@ -78,6 +111,7 @@ function extractCommentsFromReportPayload(payload: any, reportId: string, initia
   const possibleString =
     (typeof payload?.report?.comments === 'string' && payload.report.comments) ||
     (typeof payload?.comments === 'string' && payload.comments) ||
+    (typeof payload?.data?.comments === 'string' && payload.data.comments) ||
     initialComment;
 
   return seedFromInitialComment(reportId, possibleString);
@@ -99,8 +133,7 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
 
     try {
       const res = await commentsApi.listByReport(reportId);
-      const raw = res.data?.comments || res.data?.data || [];
-      const normalized = normalizeComments(Array.isArray(raw) ? raw : [], reportId);
+      const normalized = extractCommentsFromPayload(res.data, reportId, initialComment);
       if (normalized.length > 0) {
         setItems(normalized);
         return normalized;
@@ -111,7 +144,7 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
 
     try {
       const res = await reportsApi.getOne(reportId);
-      const fallbackFromReport = extractCommentsFromReportPayload(res.data, reportId, initialComment);
+      const fallbackFromReport = extractCommentsFromPayload(res.data, reportId, initialComment);
       setItems(fallbackFromReport);
       return fallbackFromReport;
     } catch {
@@ -142,9 +175,10 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
       const res = await commentsApi.create({ reportId, content: draft.trim() });
       const created = res.data?.comment || res.data?.data;
       const refreshed = await loadComments({ silent: true });
-      const wasConfirmed = created?.id ? refreshed.some((item) => item.id === created.id) : false;
+      const createdId = normalizeComparableId(created?.id || created?._id || created?.commentId);
+      const wasConfirmed = createdId ? refreshed.some((item) => item.id === createdId) : false;
 
-      if (!created?.id || !wasConfirmed) {
+      if (!createdId || !wasConfirmed) {
         setWarning('El backend respondió al crear el comentario, pero luego no lo devolvió en la lectura. Parece un problema de persistencia o de listado en backend.');
       } else {
         setDraft('');
@@ -189,7 +223,7 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
         {orderedItems.map((item) => {
           const mine = item.userId === currentUserId;
           const isEditing = editingId === item.id;
-          const displayName = mine ? 'Tú' : item.authorName || 'Usuario';
+          const displayName = mine ? currentUserName || 'Tú' : item.authorName || 'Usuario';
           return (
             <article key={item.id} className={`message-card ${mine ? 'mine' : ''}`}>
               <div className="message-avatar">{initials(displayName)}</div>
