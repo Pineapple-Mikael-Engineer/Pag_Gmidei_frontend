@@ -43,10 +43,8 @@ function todayValue() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function isTaskEligibleForReport(task: TaskItem, reportDate: string) {
-  if (!reportDate) return true;
-  const day = reportDate.slice(0, 10);
-  return task.startDate <= day && task.endDate >= day;
+function isTaskEligibleForReport(_task: TaskItem, _reportDate: string) {
+  return true;
 }
 
 export default function ReportEditor({

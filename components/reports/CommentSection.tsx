@@ -130,6 +130,8 @@ function extractCommentsFromPayload(payload: any, reportId: string, initialComme
     return mergedItems;
   }
 
+  if (merged.size > 0) return Array.from(merged.values());
+
   const possibleString =
     (typeof payload?.report?.comments === 'string' && payload.report.comments) ||
     (typeof payload?.comments === 'string' && payload.comments) ||
