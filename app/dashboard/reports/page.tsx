@@ -10,6 +10,7 @@ import { parseReportMarkdown } from '../../../lib/reportSections';
 import { getReportReview, loadReportReviews, ReportReviewStatus, updateReportReview } from '../../../lib/reportReviews';
 import { setLinkedTaskIds } from '../../../lib/reportTaskLinks';
 import { fetchTasksFromAnySource, TaskItem } from '../../../lib/tasks';
+import { canManageProject, canManageSubgroup } from '../../../lib/permissions';
 
 type ReportItem = ReportApiModel & {
   status?: 'EN_PROGRESO' | 'COMPLETADO' | 'REVISADO';
