@@ -24,6 +24,12 @@ export default function ReportViewer({ markdown, externalLinks = [], links = [],
   const mergedLinks = useMemo(() => Array.from(new Set([...links, ...sections.evidencia, ...externalLinks])).filter(Boolean), [links, sections.evidencia, externalLinks]);
   const hasEvidenceState = typeof hasEvidence === 'boolean' ? hasEvidence : mergedLinks.length > 0;
 
+  const highlights = [
+    { label: 'Avance', value: sections.avance || 'No se registró un avance específico.' },
+    { label: 'Problemas', value: sections.problemas || 'Sin bloqueos declarados.' },
+    { label: 'Siguiente paso', value: sections.siguientePaso || 'No se definió una siguiente acción.' },
+  ];
+
   return (
     <div className="space-y-5">
       {relatedTasks.length > 0 && (
