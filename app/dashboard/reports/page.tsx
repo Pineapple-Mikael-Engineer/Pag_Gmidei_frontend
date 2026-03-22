@@ -174,17 +174,9 @@ export default function ReportsPage() {
 
   return (
     <div className="page-shell space-y-6">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p className="section-title">Informes</p>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-950">Centro de reportes</h1>
-        </div>
-        <div className="review-summary-strip">
-          <span>{summary.total} visibles</span>
-          <span>{summary.evidence} con evidencia</span>
-          <span>{summary.reviewed} aprobados</span>
-          <span>{summary.members} miembros</span>
-        </div>
+      <div>
+        <p className="section-title">Informes</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-950">Centro de reportes</h1>
       </div>
 
       <div className="module-tabs">
@@ -194,7 +186,7 @@ export default function ReportsPage() {
       </div>
 
       {activeTab === 'create' && (
-        <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <section>
           <div className="card space-y-3">
             <p className="section-title">Creación de reporte</p>
             <label className="text-sm text-slate-600">Proyecto</label>
@@ -231,18 +223,7 @@ export default function ReportsPage() {
             />
           </div>
 
-          <div className="card space-y-4">
-            <div>
-              <p className="section-title">Estructura</p>
-              <h2 className="text-xl font-semibold text-slate-900">Qué se espera del informe</h2>
-            </div>
-            <ul className="check-list-panel text-sm text-slate-600">
-              <li>Avance con contexto suficiente para revisión.</li>
-              <li>Problemas o riesgos explícitos para escalar a tiempo.</li>
-              <li>Siguiente paso concreto para facilitar seguimiento.</li>
-              <li>Evidencia suficiente para que la calificación no dependa solo del texto.</li>
-            </ul>
-          </div>
+
         </section>
       )}
 
@@ -309,10 +290,10 @@ export default function ReportsPage() {
                         </div>
                         <div className="text-xs text-slate-500">{r.author.fullName} · {r.author.role ? GROUP_ROLE_LABELS[r.author.role] : '—'} · {formatPeruDateTime(r.reportDate)}</div>
                       </div>
-                      <div className="report-meta-stack">
-                        <div><span className="meta-label">Problemas</span><p>{sections.problemas || 'Sin bloqueos registrados.'}</p></div>
-                        <div><span className="meta-label">Siguiente paso</span><p>{sections.siguientePaso || 'No definido.'}</p></div>
-                        <div><span className="meta-label">Adjuntos</span><p>{attachmentCount > 0 ? `${attachmentCount} archivo(s)` : 'Sin adjuntos'}</p></div>
+                      <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+                        <span className="badge-muted">{attachmentCount > 0 ? `${attachmentCount} adj.` : 'Sin adjuntos'}</span>
+                        {sections.problemas && <span className="badge-muted">Con problemas</span>}
+                        {sections.siguientePaso && <span className="badge-muted">Con siguiente paso</span>}
                       </div>
                     </div>
                   </Link>

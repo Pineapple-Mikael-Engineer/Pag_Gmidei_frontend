@@ -83,68 +83,6 @@ function extractCommentsFromReportPayload(payload: any, reportId: string, initia
   return seedFromInitialComment(reportId, possibleString);
 }
 
-function initials(name?: string) {
-  return (name || 'U')
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('');
-}
-
-function seedFromInitialComment(reportId: string, initialComment?: string | null): CommentItem[] {
-  if (!initialComment) return [];
-  return [
-    {
-      id: 'seed-comment',
-      reportId,
-      userId: 'system',
-      authorName: 'Comentario inicial',
-      content: initialComment,
-      createdAt: new Date().toISOString(),
-    },
-  ];
-}
-
-function normalizeComments(rawComments: any[], reportId: string): CommentItem[] {
-  return rawComments
-    .filter(Boolean)
-    .map((comment: any, index: number) => ({
-      id: comment.id || `comment-${index}`,
-      reportId: comment.reportId || reportId,
-      userId: comment.userId || comment.user?.id || comment.authorId || 'unknown',
-      authorName: comment.user?.fullName || comment.authorName || comment.author?.fullName || 'Usuario',
-      content: comment.content || comment.text || comment.body || '',
-      createdAt: comment.createdAt || comment.date || new Date().toISOString(),
-      editedAt: comment.editedAt,
-    }))
-    .filter((comment) => comment.content.trim().length > 0);
-}
-
-function extractCommentsFromReportPayload(payload: any, reportId: string, initialComment?: string | null): CommentItem[] {
-  const possibleArrays = [
-    payload?.comments,
-    payload?.data,
-    payload?.report?.comments,
-    payload?.report?.commentList,
-    payload?.report?.commentsList,
-    payload?.report?.thread,
-    payload?.report?.conversation,
-  ].filter(Array.isArray) as any[];
-
-  for (const candidate of possibleArrays) {
-    const normalized = normalizeComments(candidate, reportId);
-    if (normalized.length > 0) return normalized;
-  }
-
-  const possibleString =
-    (typeof payload?.report?.comments === 'string' && payload.report.comments) ||
-    (typeof payload?.comments === 'string' && payload.comments) ||
-    initialComment;
-
-  return seedFromInitialComment(reportId, possibleString);
-}
-
 export default function CommentSection({ reportId, currentUserId = 'me', currentUserName = 'Tú', initialComment }: Props) {
   const [draft, setDraft] = useState('');
   const [editingId, setEditingId] = useState('');
@@ -201,9 +139,8 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
       if (!comment?.id && !comment?.content) {
         setWarning('El backend recibió el comentario, pero no devolvió el registro creado.');
       } else {
-        setItems((prev) => [
-          ...prev.filter((item) => item.id !== 'seed-comment'),
-          {
+        setItems((prev) => {
+          const nextComment = {
             id: comment.id,
             reportId: comment.reportId || reportId,
             userId: comment.userId || currentUserId,
@@ -211,11 +148,12 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
             content: comment.content,
             createdAt: comment.createdAt || new Date().toISOString(),
             editedAt: comment.editedAt,
-          },
-        ]);
+          };
+          const base = prev.filter((item) => item.id !== 'seed-comment' && item.id !== nextComment.id);
+          return [...base, nextComment];
+        });
       }
       setDraft('');
-      void loadComments();
     } catch {
       setWarning('No se pudo guardar el comentario en backend. No se agregó localmente para evitar inconsistencias.');
     }
@@ -227,7 +165,6 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
     try {
       await commentsApi.update(item.id, { content: editingDraft.trim() });
       setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, content: editingDraft.trim(), editedAt: new Date().toISOString() } : x)));
-      void loadComments();
     } catch {
       setWarning('No se pudo persistir la edición del comentario en backend.');
     }

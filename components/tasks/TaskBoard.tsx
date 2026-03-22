@@ -219,12 +219,12 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
 
       {activeTab === 'overview' && (
         <section className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-5">
-            <div className="stat-card"><span className="stat-label">Visibles</span><strong className="stat-value">{summary.total}</strong></div>
-            <div className="stat-card"><span className="stat-label">Pendientes</span><strong className="stat-value">{summary.pending}</strong></div>
-            <div className="stat-card"><span className="stat-label">En progreso</span><strong className="stat-value">{summary.progressing}</strong></div>
-            <div className="stat-card"><span className="stat-label">Cumplidas</span><strong className="stat-value">{summary.completed}</strong></div>
-            <div className="stat-card danger"><span className="stat-label">% cumplimiento</span><strong className="stat-value">{summary.completionRate}%</strong></div>
+          <div className="review-summary-strip">
+            <span>{summary.total} visibles</span>
+            <span>{summary.pending} pendientes</span>
+            <span>{summary.progressing} en progreso</span>
+            <span>{summary.completed} cumplidas</span>
+            <span>{summary.completionRate}% cumplimiento</span>
           </div>
 
           <div className="card space-y-4">
@@ -293,22 +293,15 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
                       )}
                     </div>
 
-                    <div className="grid gap-3 xl:grid-cols-[1.3fr_0.9fr]">
-                      <div>
-                        <label className="editor-label">Bitácora de la tarea</label>
-                        <textarea
-                          className="input min-h-24"
-                          value={task.progressNote || ''}
-                          onChange={(event) => handleNoteChange(task, event.target.value, 'progressNote')}
-                          placeholder="Añade avances, incidencias o el estado operativo de la tarea."
-                          disabled={!canUpdate}
-                        />
-                      </div>
-                      <div className="task-meta-panel">
-                        <p><strong>Ventana:</strong> {task.startDate} → {task.endDate}</p>
-                        <p><strong>Cumplida:</strong> {task.completedAt ? new Date(task.completedAt).toLocaleString('es-PE') : 'Aún no'}</p>
-                        <p><strong>Validación líder:</strong> {task.leaderValidation?.reviewerName || 'Pendiente'}</p>
-                      </div>
+                    <div>
+                      <label className="editor-label">Bitácora de la tarea</label>
+                      <textarea
+                        className="input min-h-24"
+                        value={task.progressNote || ''}
+                        onChange={(event) => handleNoteChange(task, event.target.value, 'progressNote')}
+                        placeholder="Añade avances, incidencias o el estado operativo de la tarea."
+                        disabled={!canUpdate}
+                      />
                     </div>
                   </article>
                 );
@@ -319,7 +312,7 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
       )}
 
       {activeTab === 'assign' && (
-        <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+        <section>
           <div className="card space-y-4">
             <div>
               <p className="section-title">Asignación</p>
@@ -362,18 +355,7 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
             {feedback && <p className="text-sm text-blue-700">{feedback}</p>}
           </div>
 
-          <div className="card space-y-4">
-            <div>
-              <p className="section-title">Reglas</p>
-              <h2 className="text-xl font-semibold text-slate-900">Cómo se califican</h2>
-            </div>
-            <ul className="check-list-panel text-sm text-slate-600">
-              <li>El estado operativo indica si la tarea está pendiente, en progreso, completada o vencida.</li>
-              <li>Las etiquetas rápidas ayudan a contextualizar prioridad, bloqueos o autonomía.</li>
-              <li>La casilla de validación es para el líder del proyecto o administrador.</li>
-              <li>La nota de revisión permite dejar la calificación o criterio de cumplimiento.</li>
-            </ul>
-          </div>
+
         </section>
       )}
 
