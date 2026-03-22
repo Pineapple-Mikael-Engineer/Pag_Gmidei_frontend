@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { GroupRole } from '../../lib/api';
-import { loadTasks, TaskAssignee, TaskItem, TaskScore, TaskStatus, updateTask, upsertTask } from '../../lib/tasks';
+import { createTaskInAnySource, fetchTasksFromAnySource, TaskAssignee, TaskItem, TaskScore, TaskStatus, TaskSubtask, updateTaskInAnySource } from '../../lib/tasks';
 
 type MembershipProject = {
   subgroupId: string;
@@ -21,6 +21,14 @@ type Props = {
 };
 
 type TaskTab = 'overview' | 'assign' | 'review';
+
+type EditableTaskForm = {
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  subtasksText: string;
+};
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   pendiente: 'Pendiente',
@@ -45,6 +53,7 @@ const emptyForm = {
   description: '',
   startDate: '',
   endDate: '',
+  subtasksText: '',
 };
 
 function canManageProject(projectRoles: GroupRole[]) {
@@ -53,6 +62,18 @@ function canManageProject(projectRoles: GroupRole[]) {
 
 function canLeadProject(projectRoles: GroupRole[]) {
   return projectRoles.includes('LIDER');
+}
+
+function subtasksToText(subtasks?: TaskSubtask[]) {
+  return (subtasks || []).map((item) => item.title).join('\n');
+}
+
+function parseSubtasks(value: string): TaskSubtask[] {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((title, index) => ({ id: `draft-subtask-${index}-${title}`, title, done: false }));
 }
 
 export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin = false, projects, memberDirectory }: Props) {
@@ -64,10 +85,22 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
   const [viewMode, setViewMode] = useState<'mine' | 'managed'>('mine');
   const [activeTab, setActiveTab] = useState<TaskTab>('overview');
   const [feedback, setFeedback] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [storageMode, setStorageMode] = useState<'backend' | 'local'>('local');
+  const [editingTaskId, setEditingTaskId] = useState('');
+  const [editingForm, setEditingForm] = useState<EditableTaskForm | null>(null);
 
   useEffect(() => {
-    const loaded = loadTasks();
-    setTasks(loaded);
+    const boot = async () => {
+      setLoading(true);
+      const result = await fetchTasksFromAnySource();
+      setTasks(result.tasks);
+      setStorageMode(result.source);
+      setLoading(false);
+    };
+
+    void boot();
+
     if (projects.length > 0) {
       const manageable = projects.find((project) => canManageProject(project.roles));
       setForm((prev) => ({
@@ -135,7 +168,14 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
     };
   }, [visibleTasks]);
 
-  const handleCreateTask = (event: FormEvent) => {
+  const syncTasks = async (promise: Promise<{ tasks: TaskItem[]; source: 'backend' | 'local' }>, successMessage?: string) => {
+    const result = await promise;
+    setTasks(result.tasks);
+    setStorageMode(result.source);
+    if (successMessage) setFeedback(successMessage);
+  };
+
+  const handleCreateTask = async (event: FormEvent) => {
     event.preventDefault();
     const project = projects.find((item) => item.subgroupId === form.subgroupId);
     const assignee = availableAssignees.find((item) => item.id === form.assigneeId);
@@ -148,7 +188,7 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
       .map((member) => member.id);
 
     const now = new Date().toISOString();
-    const next = upsertTask({
+    await syncTasks(createTaskInAnySource({
       id: crypto.randomUUID(),
       title: form.title.trim(),
       description: form.description.trim(),
@@ -165,48 +205,66 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
       labels: [],
       score: 'sin_revisar',
       reviewNote: '',
+      subtasks: parseSubtasks(form.subtasksText),
       leaderValidation: { checked: false },
       createdAt: now,
       updatedAt: now,
-    });
-    setTasks(next);
+    }), 'Tarea creada correctamente.');
     setForm((prev) => ({ ...emptyForm, subgroupId: prev.subgroupId }));
-    setFeedback('Tarea creada y visible para el miembro asignado, su mentor y su líder.');
     setActiveTab('overview');
   };
 
-  const handleStatusChange = (task: TaskItem, status: TaskStatus) => {
-    const next = updateTask(task.id, { status });
-    setTasks(next);
+  const handleStatusChange = async (task: TaskItem, status: TaskStatus) => {
+    await syncTasks(updateTaskInAnySource(task.id, { status }), 'Estado de tarea actualizado.');
   };
 
-  const handleNoteChange = (task: TaskItem, note: string, field: 'progressNote' | 'reviewNote') => {
-    const next = updateTask(task.id, { [field]: note });
-    setTasks(next);
+  const handleNoteChange = async (task: TaskItem, note: string, field: 'progressNote' | 'reviewNote') => {
+    await syncTasks(updateTaskInAnySource(task.id, { [field]: note }), 'Nota actualizada.');
   };
 
-  const toggleLabel = (task: TaskItem, label: string) => {
+  const toggleLabel = async (task: TaskItem, label: string) => {
     const current = task.labels || [];
     const labels = current.includes(label) ? current.filter((item) => item !== label) : [...current, label];
-    const next = updateTask(task.id, { labels });
-    setTasks(next);
+    await syncTasks(updateTaskInAnySource(task.id, { labels }), 'Etiquetas actualizadas.');
   };
 
-  const handleScoreChange = (task: TaskItem, score: TaskScore) => {
-    const next = updateTask(task.id, { score });
-    setTasks(next);
+  const handleScoreChange = async (task: TaskItem, score: TaskScore) => {
+    await syncTasks(updateTaskInAnySource(task.id, { score }), 'Calificación actualizada.');
   };
 
-  const handleLeaderValidation = (task: TaskItem, checked: boolean) => {
-    const next = updateTask(task.id, {
+  const handleLeaderValidation = async (task: TaskItem, checked: boolean) => {
+    await syncTasks(updateTaskInAnySource(task.id, {
       leaderValidation: {
         checked,
         reviewerId: checked ? currentUserId : undefined,
         reviewerName: checked ? currentUserName : undefined,
         reviewedAt: checked ? new Date().toISOString() : undefined,
       },
+    }), 'Validación actualizada.');
+  };
+
+  const startEdit = (task: TaskItem) => {
+    setEditingTaskId(task.id);
+    setEditingForm({
+      title: task.title,
+      description: task.description,
+      startDate: task.startDate,
+      endDate: task.endDate,
+      subtasksText: subtasksToText(task.subtasks),
     });
-    setTasks(next);
+  };
+
+  const saveEdit = async (task: TaskItem) => {
+    if (!editingForm) return;
+    await syncTasks(updateTaskInAnySource(task.id, {
+      title: editingForm.title.trim(),
+      description: editingForm.description.trim(),
+      startDate: editingForm.startDate,
+      endDate: editingForm.endDate,
+      subtasks: parseSubtasks(editingForm.subtasksText),
+    }), 'Tarea actualizada.');
+    setEditingTaskId('');
+    setEditingForm(null);
   };
 
   return (
@@ -215,6 +273,11 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
         <button type="button" className={activeTab === 'overview' ? 'active' : ''} onClick={() => setActiveTab('overview')}>Visualización de tareas</button>
         <button type="button" className={activeTab === 'assign' ? 'active' : ''} onClick={() => setActiveTab('assign')}>Asignación</button>
         {canSeeReviewTab && <button type="button" className={activeTab === 'review' ? 'active' : ''} onClick={() => setActiveTab('review')}>Calificación</button>}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
+        <span className="badge-muted">Persistencia actual: {storageMode === 'backend' ? 'backend' : 'fallback local'}</span>
+        {feedback && <span className="text-blue-700">{feedback}</span>}
       </div>
 
       {activeTab === 'overview' && (
@@ -232,7 +295,7 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
               <div>
                 <p className="section-title">Visualización</p>
                 <h2 className="text-xl font-semibold text-slate-900">Seguimiento de tareas</h2>
-                <p className="text-sm text-slate-500 mt-1">Esta pestaña concentra el estado operativo sin mezclarlo con asignación ni calificación.</p>
+                <p className="text-sm text-slate-500 mt-1">Aquí puedes ver y editar plazo, descripción y subtareas sin salir de la vista operativa.</p>
               </div>
               <div className="segmented-control">
                 <button type="button" className={viewMode === 'mine' ? 'active' : ''} onClick={() => setViewMode('mine')}>Mis tareas</button>
@@ -260,11 +323,14 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
             </div>
 
             <div className="space-y-4">
-              {visibleTasks.length === 0 && <div className="empty-state"><h3>No hay tareas para este filtro</h3><p>Cambia la vista o asigna nuevas tareas desde la pestaña correspondiente.</p></div>}
+              {loading && <p className="text-sm text-slate-500">Cargando tareas...</p>}
+              {!loading && visibleTasks.length === 0 && <div className="empty-state"><h3>No hay tareas para este filtro</h3><p>Cambia la vista o asigna nuevas tareas desde la pestaña correspondiente.</p></div>}
               {visibleTasks.map((task) => {
                 const canUpdate = isGodAdmin || task.assigneeId === currentUserId || task.mentorOrLeaderIds.includes(currentUserId);
+                const canManageStructure = isGodAdmin || task.mentorOrLeaderIds.includes(currentUserId);
+                const isEditing = editingTaskId === task.id && !!editingForm;
                 return (
-                  <article key={task.id} className="task-card">
+                  <article key={task.id} className="task-card space-y-4">
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                       <div className="space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
@@ -273,32 +339,67 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
                           <span className="badge-link">{task.assigneeName}</span>
                           <span className={`review-pill ${task.leaderValidation?.checked ? 'approved' : 'pending'}`}>{task.leaderValidation?.checked ? 'Validada por líder' : 'Pendiente de validar'}</span>
                         </div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-slate-900">{task.title}</h3>
-                          <p className="text-sm text-slate-600 mt-1">{task.description}</p>
-                        </div>
+                        {isEditing ? (
+                          <div className="grid gap-3">
+                            <input className="input" value={editingForm.title} onChange={(event) => setEditingForm({ ...editingForm, title: event.target.value })} />
+                            <textarea className="input min-h-24" value={editingForm.description} onChange={(event) => setEditingForm({ ...editingForm, description: event.target.value })} />
+                            <div className="grid gap-3 md:grid-cols-2">
+                              <input className="input" type="date" value={editingForm.startDate} onChange={(event) => setEditingForm({ ...editingForm, startDate: event.target.value })} />
+                              <input className="input" type="date" value={editingForm.endDate} onChange={(event) => setEditingForm({ ...editingForm, endDate: event.target.value })} />
+                            </div>
+                            <textarea className="input min-h-24" value={editingForm.subtasksText} onChange={(event) => setEditingForm({ ...editingForm, subtasksText: event.target.value })} placeholder="Una subtarea por línea" />
+                          </div>
+                        ) : (
+                          <div>
+                            <h3 className="text-lg font-semibold text-slate-900">{task.title}</h3>
+                            <p className="text-sm text-slate-600 mt-1">{task.description}</p>
+                            <p className="text-xs text-slate-500 mt-2">{task.startDate} → {task.endDate}</p>
+                          </div>
+                        )}
                         <div className="flex flex-wrap gap-2">
                           {(task.labels || []).length === 0 && <span className="badge-muted">Sin etiquetas extra</span>}
                           {(task.labels || []).map((label) => <span key={label} className="tag-chip">{label}</span>)}
                           <span className="tag-chip subtle">{SCORE_LABELS[task.score || 'sin_revisar']}</span>
+                          {(task.subtasks || []).length > 0 && <span className="badge-muted">{task.subtasks?.length} subtarea(s)</span>}
                         </div>
                       </div>
 
                       {canUpdate && (
                         <div className="task-actions space-y-2">
-                          <select className="input" value={task.status} onChange={(event) => handleStatusChange(task, event.target.value as TaskStatus)}>
+                          <select className="input" value={task.status} onChange={(event) => void handleStatusChange(task, event.target.value as TaskStatus)}>
                             {Object.entries(STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                           </select>
+                          {canManageStructure && !isEditing && <button type="button" className="btn-secondary text-sm" onClick={() => startEdit(task)}>Editar tarea</button>}
+                          {isEditing && (
+                            <div className="flex gap-2">
+                              <button type="button" className="btn-primary text-sm" onClick={() => void saveEdit(task)}>Guardar</button>
+                              <button type="button" className="btn-secondary text-sm" onClick={() => { setEditingTaskId(''); setEditingForm(null); }}>Cancelar</button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
+
+                    {(task.subtasks || []).length > 0 && !isEditing && (
+                      <div>
+                        <p className="editor-label">Subtareas</p>
+                        <div className="grid gap-2">
+                          {(task.subtasks || []).map((subtask) => (
+                            <label key={subtask.id} className="inline-flex items-center gap-2 text-sm text-slate-700">
+                              <input type="checkbox" checked={subtask.done} readOnly />
+                              <span>{subtask.title}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     <div>
                       <label className="editor-label">Bitácora de la tarea</label>
                       <textarea
                         className="input min-h-24"
                         value={task.progressNote || ''}
-                        onChange={(event) => handleNoteChange(task, event.target.value, 'progressNote')}
+                        onChange={(event) => void handleNoteChange(task, event.target.value, 'progressNote')}
                         placeholder="Añade avances, incidencias o el estado operativo de la tarea."
                         disabled={!canUpdate}
                       />
@@ -317,13 +418,13 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
             <div>
               <p className="section-title">Asignación</p>
               <h2 className="text-xl font-semibold text-slate-900">Crear nueva tarea</h2>
-              <p className="text-sm text-slate-500 mt-1">Aquí solo se gestiona la asignación para no saturar la vista operativa.</p>
+              <p className="text-sm text-slate-500 mt-1">Aquí también puedes definir subtareas iniciales para que luego puedan editarse.</p>
             </div>
 
             {manageableProjects.length === 0 ? (
               <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">Necesitas ser líder o mentor de un proyecto para crear tareas.</p>
             ) : (
-              <form className="space-y-3" onSubmit={handleCreateTask}>
+              <form className="space-y-3" onSubmit={(event) => void handleCreateTask(event)}>
                 <div className="editor-section">
                   <label className="editor-label">Proyecto</label>
                   <select className="input" value={form.subgroupId} onChange={(event) => setForm((prev) => ({ ...prev, subgroupId: event.target.value }))} required>
@@ -349,13 +450,14 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
                   <div className="editor-section"><label className="editor-label">Inicio</label><input className="input" type="date" value={form.startDate} onChange={(event) => setForm((prev) => ({ ...prev, startDate: event.target.value }))} required /></div>
                   <div className="editor-section"><label className="editor-label">Fin</label><input className="input" type="date" value={form.endDate} onChange={(event) => setForm((prev) => ({ ...prev, endDate: event.target.value }))} required /></div>
                 </div>
+                <div className="editor-section">
+                  <label className="editor-label">Subtareas iniciales</label>
+                  <textarea className="input min-h-24" value={form.subtasksText} onChange={(event) => setForm((prev) => ({ ...prev, subtasksText: event.target.value }))} placeholder="Una subtarea por línea" />
+                </div>
                 <button className="btn-primary" type="submit">Crear tarea</button>
               </form>
             )}
-            {feedback && <p className="text-sm text-blue-700">{feedback}</p>}
           </div>
-
-
         </section>
       )}
 
@@ -395,7 +497,7 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
                     </div>
                     <div className="task-review-box">
                       <label className={`leader-checkbox ${canToggleValidation ? '' : 'disabled'}`}>
-                        <input type="checkbox" checked={!!task.leaderValidation?.checked} onChange={(event) => handleLeaderValidation(task, event.target.checked)} disabled={!canToggleValidation} />
+                        <input type="checkbox" checked={!!task.leaderValidation?.checked} onChange={(event) => void handleLeaderValidation(task, event.target.checked)} disabled={!canToggleValidation} />
                         Validada por líder
                       </label>
                       <p className="text-xs text-slate-500">{task.leaderValidation?.reviewerName ? `Última validación: ${task.leaderValidation.reviewerName}` : 'Sin validación aún.'}</p>
@@ -407,7 +509,7 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
                       <p className="editor-label">Etiquetas de seguimiento</p>
                       <div className="flex flex-wrap gap-2">
                         {TASK_LABELS.map((label) => (
-                          <button key={label} type="button" className={`tag-toggle ${(task.labels || []).includes(label) ? 'active' : ''}`} onClick={() => toggleLabel(task, label)}>
+                          <button key={label} type="button" className={`tag-toggle ${(task.labels || []).includes(label) ? 'active' : ''}`} onClick={() => void toggleLabel(task, label)}>
                             {label}
                           </button>
                         ))}
@@ -419,7 +521,7 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
                         <p className="editor-label">Nivel de cumplimiento</p>
                         <div className="grid gap-2 sm:grid-cols-2">
                           {Object.entries(SCORE_LABELS).map(([value, label]) => (
-                            <button key={value} type="button" className={`score-card ${task.score === value ? 'active' : ''}`} onClick={() => handleScoreChange(task, value as TaskScore)}>
+                            <button key={value} type="button" className={`score-card ${task.score === value ? 'active' : ''}`} onClick={() => void handleScoreChange(task, value as TaskScore)}>
                               {label}
                             </button>
                           ))}
@@ -427,7 +529,7 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
                       </div>
                       <div>
                         <label className="editor-label">Nota de calificación</label>
-                        <textarea className="input min-h-24" value={task.reviewNote || ''} onChange={(event) => handleNoteChange(task, event.target.value, 'reviewNote')} placeholder="Deja observaciones sobre el cumplimiento de la tarea." />
+                        <textarea className="input min-h-24" value={task.reviewNote || ''} onChange={(event) => void handleNoteChange(task, event.target.value, 'reviewNote')} placeholder="Deja observaciones sobre el cumplimiento de la tarea." />
                       </div>
                     </div>
                   </div>

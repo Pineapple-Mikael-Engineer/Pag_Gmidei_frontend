@@ -120,6 +120,7 @@ export interface ReportApiModel {
   comments?: string | null;
   externalLinks?: string[];
   links?: string[];
+  taskIds?: string[];
   has_evidence?: boolean;
   updatedAt?: string;
   edited?: boolean;
@@ -154,6 +155,13 @@ export const commentsApi = {
   listByReport: (reportId: string) => api.get('/comments', { params: { reportId } }),
   create: (data: { reportId: string; content: string }) => api.post('/comments', data),
   update: (commentId: string, data: { content: string }) => api.put(`/comments/${commentId}`, data),
+};
+
+
+export const tasksApi = {
+  getAll: (params?: { subgroupId?: string; assigneeId?: string; from?: string; to?: string }) => api.get('/tasks', { params }),
+  create: (data: object) => api.post('/tasks', data),
+  update: (taskId: string, data: object) => api.patch(`/tasks/${taskId}`, data),
 };
 
 export const uploadApi = {

@@ -8,6 +8,8 @@ import { formatPeruDateTime } from '../../../lib/datetime';
 import ReportEditor from '../../../components/reports/ReportEditor';
 import { parseReportMarkdown } from '../../../lib/reportSections';
 import { getReportReview, loadReportReviews, ReportReviewStatus, updateReportReview } from '../../../lib/reportReviews';
+import { setLinkedTaskIds } from '../../../lib/reportTaskLinks';
+import { fetchTasksFromAnySource, TaskItem } from '../../../lib/tasks';
 
 type ReportItem = ReportApiModel & {
   status?: 'EN_PROGRESO' | 'COMPLETADO' | 'REVISADO';
@@ -69,6 +71,7 @@ export default function ReportsPage() {
   const [mySubgroups, setMySubgroups] = useState<ProjectMembership[]>([]);
   const [membersByProject, setMembersByProject] = useState<Record<string, MemberItem[]>>({});
   const [reviewRefreshToken, setReviewRefreshToken] = useState(0);
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
 
   const [search, setSearch] = useState('');
   const [onlyMine, setOnlyMine] = useState(false);
@@ -108,6 +111,14 @@ export default function ReportsPage() {
     const source = filterSubgroupId ? [filterSubgroupId] : mySubgroups.map((item) => item.subgroupId);
     return Array.from(new Map(source.flatMap((projectId) => (membersByProject[projectId] || []).map((member) => [member.user.id, member]))).values());
   }, [filterSubgroupId, membersByProject, mySubgroups]);
+
+  useEffect(() => {
+    fetchTasksFromAnySource()
+      .then((result) => setTasks(result.tasks))
+      .catch(() => setTasks([]));
+  }, []);
+
+  const projectTasks = useMemo(() => tasks.filter((task) => task.subgroupId === subgroupId), [subgroupId, tasks]);
 
   const reportReviews = useMemo(() => {
     const loaded = loadReportReviews();
@@ -196,7 +207,9 @@ export default function ReportsPage() {
             {warning && <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">{warning}</p>}
             <ReportEditor
               saving={saving}
-              onSubmit={async ({ title, markdown, comments, externalLinks, attachments }) => {
+              initialTaskIds={[]}
+              availableTasks={projectTasks}
+              onSubmit={async ({ title, markdown, comments, externalLinks, reportDate, taskIds, attachments }) => {
                 setSaving(true);
                 setError('');
                 setWarning('');
@@ -205,11 +218,15 @@ export default function ReportsPage() {
                   formData.append('title', title);
                   formData.append('markdown', markdown);
                   formData.append('comments', comments);
+                  formData.append('reportDate', reportDate);
                   if (externalLinks.trim()) formData.append('externalLinks', externalLinks);
                   if (!subgroupId) throw new Error('Selecciona subgrupo');
                   formData.append('subgroupId', subgroupId);
+                  taskIds.forEach((taskId) => formData.append('taskIds', taskId));
                   Array.from(attachments || []).forEach((f) => formData.append('attachments', f));
                   const res = await reportsApi.create(formData);
+                  const createdReportId = res.data?.report?.id || res.data?.data?.id || res.data?.id;
+                  if (createdReportId) setLinkedTaskIds(createdReportId, taskIds);
                   const warn = warningMessageFromResponse(res.data);
                   if (warn) setWarning(warn);
                   await loadReports();

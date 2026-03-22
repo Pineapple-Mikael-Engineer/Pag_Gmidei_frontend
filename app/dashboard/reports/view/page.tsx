@@ -9,6 +9,8 @@ import ReportViewer from '../../../../components/reports/ReportViewer';
 import ReportEditor from '../../../../components/reports/ReportEditor';
 import CommentSection from '../../../../components/reports/CommentSection';
 import { useAuthStore } from '../../../../store/authStore';
+import { fetchTasksFromAnySource, TaskItem } from '../../../../lib/tasks';
+import { getLinkedTaskIds, setLinkedTaskIds } from '../../../../lib/reportTaskLinks';
 
 type ReportDetail = ReportApiModel;
 type EditableSubgroup = { subgroupId: string; subgroup?: { name?: string; code?: string } };
@@ -35,6 +37,7 @@ export default function ReportDetailPage() {
   const [error, setError] = useState('');
   const [mySubgroups, setMySubgroups] = useState<EditableSubgroup[]>([]);
   const [editSubgroupId, setEditSubgroupId] = useState('');
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
 
   const canEdit = !!report && !!user && (user.isGodAdmin || user.id === report.author.id);
 
@@ -49,8 +52,10 @@ export default function ReportDetailPage() {
     reportsApi
       .getOne(reportId)
       .then((res) => {
-        setReport(res.data.report);
-        setEditSubgroupId(res.data.report?.subgroup?.id || '');
+        const loadedReport = res.data.report;
+        const linkedTaskIds = loadedReport?.taskIds || getLinkedTaskIds(reportId);
+        setReport({ ...loadedReport, taskIds: linkedTaskIds });
+        setEditSubgroupId(loadedReport?.subgroup?.id || '');
       })
       .catch((err) => setError(err.response?.data?.error || 'No se pudo cargar el reporte.'))
       .finally(() => setLoading(false));
@@ -71,6 +76,12 @@ export default function ReportDetailPage() {
   }, [user?.id, user?.memberships]);
 
   useEffect(() => {
+    fetchTasksFromAnySource()
+      .then((result) => setTasks(result.tasks))
+      .catch(() => setTasks([]));
+  }, []);
+
+  useEffect(() => {
     if (!report || editSubgroupId) return;
     const fallback = mySubgroups.find((item) => item.subgroup?.name === report.subgroup?.name || item.subgroup?.code === report.subgroup?.code);
     if (fallback) setEditSubgroupId(fallback.subgroupId);
@@ -80,6 +91,19 @@ export default function ReportDetailPage() {
     const matched = mySubgroups.find((item) => item.subgroupId === editSubgroupId);
     return matched?.subgroup?.name || matched?.subgroup?.code || report?.subgroup?.name || report?.subgroup?.code || 'Subgrupo';
   }, [editSubgroupId, mySubgroups, report?.subgroup?.code, report?.subgroup?.name]);
+
+  const editorTasks = useMemo(() => tasks.filter((task) => task.subgroupId === (editSubgroupId || report?.subgroup?.id || '')), [editSubgroupId, report?.subgroup?.id, tasks]);
+
+  const relatedTasks = useMemo(() => {
+    const linkedTaskIds = report?.taskIds || [];
+    return tasks.filter((task) => linkedTaskIds.includes(task.id)).map((task) => ({
+      id: task.id,
+      title: task.title,
+      assigneeName: task.assigneeName,
+      startDate: task.startDate,
+      endDate: task.endDate,
+    }));
+  }, [report?.taskIds, tasks]);
 
   const handleDownload = async (fileId: string, originalName: string) => {
     if (!reportId) return;
@@ -158,8 +182,11 @@ export default function ReportDetailPage() {
                   initialComments={report.comments || ''}
                   initialExternalLinks={report.externalLinks || []}
                   initialLinks={report.links || []}
+                  initialReportDate={report.reportDate}
+                  initialTaskIds={report.taskIds || []}
+                  availableTasks={editorTasks}
                   submitLabel="Guardar cambios"
-                  onSubmit={async ({ title, markdown, comments, externalLinks }) => {
+                  onSubmit={async ({ title, markdown, comments, externalLinks, reportDate, taskIds }) => {
                     if (!canEdit) {
                       setError('No tienes permisos para editar este reporte.');
                       return;
@@ -169,13 +196,13 @@ export default function ReportDetailPage() {
                     setWarning('');
                     const editedAt = new Date().toISOString();
                     try {
-                      const payload = { title, markdown, comments, externalLinks, subgroupId: editSubgroupId };
+                      const payload = { title, markdown, comments, externalLinks, subgroupId: editSubgroupId, reportDate, taskIds };
                       const res = await reportsApi.replace(report.id, payload);
                       const warn = warningMessageFromResponse(res.data);
                       if (warn) setWarning(warn);
                     } catch {
                       try {
-                        await reportsApi.update(report.id, { title, markdown, comments, externalLinks, subgroupId: editSubgroupId });
+                        await reportsApi.update(report.id, { title, markdown, comments, externalLinks, subgroupId: editSubgroupId, reportDate, taskIds });
                       } catch {
                         // fallback local
                       }
@@ -187,6 +214,8 @@ export default function ReportDetailPage() {
                         title,
                         description: markdown,
                         comments,
+                        reportDate,
+                        taskIds,
                         links,
                         externalLinks: links,
                         has_evidence: links.length > 0,
@@ -198,6 +227,13 @@ export default function ReportDetailPage() {
                           code: nextSubgroup?.subgroup?.code || report.subgroup?.code || '',
                         },
                       };
+                      setLinkedTaskIds(report.id, taskIds);
+                      setTasks((prev) => prev.map((task) => ({
+                        ...task,
+                        linkedReportIds: taskIds.includes(task.id)
+                          ? Array.from(new Set([...(task.linkedReportIds || []), report.id]))
+                          : (task.linkedReportIds || []).filter((linkedId) => linkedId !== report.id),
+                      })));
                       setReport(updated);
                       if (typeof window !== 'undefined') {
                         localStorage.setItem(getEditedStorageKey(report.id), editedAt);
@@ -210,7 +246,7 @@ export default function ReportDetailPage() {
                 />
               </div>
             ) : (
-              <ReportViewer markdown={report.description} externalLinks={report.externalLinks || []} links={report.links || []} hasEvidence={report.has_evidence} />
+              <ReportViewer markdown={report.description} externalLinks={report.externalLinks || []} links={report.links || []} hasEvidence={report.has_evidence} relatedTasks={relatedTasks} />
             )}
 
             {(report.attachments || []).length > 0 && (

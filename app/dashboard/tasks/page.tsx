@@ -46,7 +46,17 @@ export default function TasksPage() {
 
         setMembersByProject(Object.fromEntries(entries));
       } catch (err: any) {
-        setError(err.response?.data?.error || 'No se pudo cargar el módulo de tareas.');
+        const fallbackProjects = (user?.memberships || []).map((membership) => ({
+          subgroupId: membership.subgroupId,
+          roles: membership.roles,
+          subgroup: { name: membership.subgroupName, code: membership.subgroupCode },
+        }));
+        if (fallbackProjects.length > 0) {
+          setProjects(fallbackProjects);
+          setError('');
+        } else {
+          setError(err.response?.data?.error || 'No se pudo cargar el módulo de tareas.');
+        }
       } finally {
         setLoading(false);
       }
