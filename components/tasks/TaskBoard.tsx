@@ -151,8 +151,8 @@ export default function TaskBoard({ currentUserId, currentUserName, currentUserE
   }, [tasks, currentUserEmail, currentUserId, isGodAdmin, manageableProjectIds, memberFilter, projectFilter, statusFilter, viewMode]);
 
   const reviewableTasks = useMemo(
-    () => visibleTasks.filter((task) => isGodAdmin || leaderProjectIds.has(task.subgroupId)),
-    [isGodAdmin, leaderProjectIds, visibleTasks],
+    () => tasks.filter((task) => isGodAdmin || leaderProjectIds.has(task.subgroupId)),
+    [isGodAdmin, leaderProjectIds, tasks],
   );
 
   const canSeeReviewTab = useMemo(() => {
@@ -277,7 +277,7 @@ export default function TaskBoard({ currentUserId, currentUserName, currentUserE
     <div className="space-y-6">
       <div className="module-tabs">
         <button type="button" className={activeTab === 'overview' ? 'active' : ''} onClick={() => setActiveTab('overview')}>Visualización de tareas</button>
-        <button type="button" className={activeTab === 'assign' ? 'active' : ''} onClick={() => setActiveTab('assign')}>Asignación</button>
+        {manageableProjects.length > 0 && <button type="button" className={activeTab === 'assign' ? 'active' : ''} onClick={() => setActiveTab('assign')}>Asignación</button>}
         {canSeeReviewTab && <button type="button" className={activeTab === 'review' ? 'active' : ''} onClick={() => setActiveTab('review')}>Calificación</button>}
       </div>
 
@@ -418,7 +418,7 @@ export default function TaskBoard({ currentUserId, currentUserName, currentUserE
         </section>
       )}
 
-      {activeTab === 'assign' && (
+      {activeTab === 'assign' && manageableProjects.length > 0 && (
         <section>
           <div className="card space-y-4">
             <div>

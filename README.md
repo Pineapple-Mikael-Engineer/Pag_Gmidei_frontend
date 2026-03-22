@@ -99,6 +99,7 @@ Muestra:
 - adjuntos,
 - comentarios en formato conversación,
 - edición para autor/admin, con asociación obligatoria a tareas vigentes del proyecto.
+- en creación ya no se elige fecha manual: frontend usa la fecha actual del día para mantener trazabilidad del reporte.
 
 ### 3.3 Módulo `Tareas`
 
@@ -116,7 +117,17 @@ Ruta: `/dashboard/tasks`
    - creación de tareas,
    - definición de responsable,
    - ventana de fechas,
-   - criterio o descripción de cumplimiento.
+   - criterio o descripción de cumplimiento,
+   - visible solo para líderes, mentores o administrador global.
+
+#### Regla de edición de tarea
+
+La acción **"Editar tarea"** (título, descripción, fechas y subtareas) se habilita únicamente para:
+- líderes del proyecto,
+- mentores del proyecto,
+- administrador global.
+
+El miembro asignado sigue pudiendo mover el estado y escribir en la bitácora operativa, pero no modificar la estructura de la tarea si no tiene uno de esos roles.
 
 #### Regla de edición de tarea
 
@@ -497,6 +508,8 @@ NEXT_PUBLIC_BASE_PATH=
 - Se amplió la **calificación de tareas** con etiquetas, nivel de cumplimiento y checkbox de validación del líder.
 - La edición estructural de tareas quedó restringida a líderes, mentores y modo dios.
 - La asociación de reportes a tareas ahora es obligatoria y solo admite tareas vigentes para la fecha del reporte.
+- La creación de reportes fija la fecha al día actual y ya no expone selector manual.
+- La pestaña de asignación de tareas se oculta a miembros sin rol de líder, mentor o modo dios.
 - El README quedó alineado con este nuevo flujo para que backend sepa qué información y endpoints hacen falta.
 
 

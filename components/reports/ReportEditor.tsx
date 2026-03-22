@@ -27,6 +27,7 @@ type Props = {
   availableTasks?: TaskItem[];
   saving?: boolean;
   showFiles?: boolean;
+  allowReportDateEditing?: boolean;
   onSubmit: (payload: ReportEditorData) => Promise<void> | void;
   submitLabel?: string;
 };
@@ -60,6 +61,7 @@ export default function ReportEditor({
   availableTasks = [],
   saving = false,
   showFiles = true,
+  allowReportDateEditing = true,
   onSubmit,
   submitLabel,
 }: Props) {
@@ -84,6 +86,12 @@ export default function ReportEditor({
   useEffect(() => {
     setTaskIds((prev) => prev.filter((taskId) => eligibleTaskIds.has(taskId)));
   }, [eligibleTaskIds]);
+
+  useEffect(() => {
+    if (!allowReportDateEditing) {
+      setReportDate(todayValue());
+    }
+  }, [allowReportDateEditing]);
 
   const addLink = () => {
     const links = parseEvidenceFromInput(newLink);
@@ -131,11 +139,18 @@ export default function ReportEditor({
         <input className="input" placeholder="Título" value={title} onChange={(e) => setTitle(e.target.value)} required />
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
-        <div className="editor-section">
-          <label className="editor-label">Fecha del reporte</label>
-          <input className="input" type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} required />
-        </div>
+      <div className={`grid gap-3 ${allowReportDateEditing ? 'md:grid-cols-2' : ''}`}>
+        {allowReportDateEditing ? (
+          <div className="editor-section">
+            <label className="editor-label">Fecha del reporte</label>
+            <input className="input" type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} required />
+          </div>
+        ) : (
+          <div className="editor-section">
+            <label className="editor-label">Fecha del reporte</label>
+            <div className="input bg-slate-50 text-slate-500">Se usará la fecha de hoy: {reportDate}</div>
+          </div>
+        )}
         <div className="editor-section">
           <label className="editor-label">Comentarios adicionales</label>
           <input className="input" placeholder="Notas breves para revisión" value={comments} onChange={(e) => setComments(e.target.value)} />
