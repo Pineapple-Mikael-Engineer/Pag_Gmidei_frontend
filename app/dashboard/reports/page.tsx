@@ -10,6 +10,7 @@ import { parseReportMarkdown } from '../../../lib/reportSections';
 import { getReportReview, loadReportReviews, ReportReviewStatus, updateReportReview } from '../../../lib/reportReviews';
 import { setLinkedTaskIds } from '../../../lib/reportTaskLinks';
 import { fetchTasksFromAnySource, TaskItem } from '../../../lib/tasks';
+import { canManageSubgroup } from '../../../lib/permissions';
 
 type ReportItem = ReportApiModel & {
   status?: 'EN_PROGRESO' | 'COMPLETADO' | 'REVISADO';
@@ -118,7 +119,9 @@ export default function ReportsPage() {
       .catch(() => setTasks([]));
   }, []);
 
-  const projectTasks = useMemo(() => tasks.filter((task) => task.subgroupId === subgroupId && (user?.isGodAdmin || task.assigneeId === user?.id || (!!user?.email && task.assigneeEmail === user.email))), [subgroupId, tasks, user?.email, user?.id, user?.isGodAdmin]);
+  const canManageCurrentSubgroup = useMemo(() => canManageSubgroup(user, subgroupId), [subgroupId, user]);
+
+  const projectTasks = useMemo(() => tasks.filter((task) => task.subgroupId === subgroupId && (canManageCurrentSubgroup || task.assigneeId === user?.id || (!!user?.email && task.assigneeEmail === user.email))), [canManageCurrentSubgroup, subgroupId, tasks, user?.email, user?.id]);
 
   const reportReviews = useMemo(() => {
     const loaded = loadReportReviews();

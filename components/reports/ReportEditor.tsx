@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { buildReportMarkdown, parseEvidenceFromInput, parseReportMarkdown, ReportSections } from '../../lib/reportSections';
 import { TaskItem } from '../../lib/tasks';
 import FileUploadField from './FileUploadField';
@@ -72,12 +72,18 @@ export default function ReportEditor({
   const [sections, setSections] = useState<ReportSections>(initialMarkdown ? parsed : emptySections);
   const [externalLinks, setExternalLinks] = useState<string[]>(Array.from(new Set([...initialExternalLinks, ...initialLinks])));
   const [newLink, setNewLink] = useState('');
+  const [taskError, setTaskError] = useState('');
 
   const label = submitLabel || (mode === 'edit' ? 'Guardar edición' : 'Guardar reporte');
   const eligibleTasks = useMemo(
     () => availableTasks.filter((task) => isTaskEligibleForReport(task, reportDate)),
     [availableTasks, reportDate],
   );
+  const eligibleTaskIds = useMemo(() => new Set(eligibleTasks.map((task) => task.id)), [eligibleTasks]);
+
+  useEffect(() => {
+    setTaskIds((prev) => prev.filter((taskId) => eligibleTaskIds.has(taskId)));
+  }, [eligibleTaskIds]);
 
   const addLink = () => {
     const links = parseEvidenceFromInput(newLink);
@@ -93,11 +99,19 @@ export default function ReportEditor({
   };
 
   const toggleTask = (taskId: string) => {
+    setTaskError('');
     setTaskIds((prev) => (prev.includes(taskId) ? prev.filter((item) => item !== taskId) : [...prev, taskId]));
   };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    const validTaskIds = taskIds.filter((taskId) => eligibleTaskIds.has(taskId));
+    if (validTaskIds.length === 0) {
+      setTaskError(eligibleTasks.length === 0
+        ? 'No hay tareas activas disponibles para la fecha seleccionada, por lo que no se puede guardar el reporte.'
+        : 'Debes asociar al menos una tarea activa antes de guardar el reporte.');
+      return;
+    }
     const markdown = buildReportMarkdown({ ...sections, evidencia: externalLinks });
     await onSubmit({
       title,
@@ -105,7 +119,7 @@ export default function ReportEditor({
       comments,
       externalLinks: externalLinks.join(', '),
       reportDate,
-      taskIds,
+      taskIds: validTaskIds,
       attachments: null,
     });
   };
@@ -131,10 +145,10 @@ export default function ReportEditor({
       <div className="editor-section space-y-3">
         <div>
           <label className="editor-label">Asociar a tareas activas</label>
-          <p className="text-sm text-slate-500 mt-1">Solo se muestran tareas cuyo rango incluye la fecha del reporte.</p>
+          <p className="text-sm text-slate-500 mt-1">Debes asociar al menos una tarea y solo se muestran las tareas cuyo rango incluye la fecha del reporte.</p>
         </div>
         {eligibleTasks.length === 0 ? (
-          <div className="empty-state"><h3>Sin tareas elegibles</h3><p>No hay tareas activas para esta fecha en el proyecto seleccionado.</p></div>
+          <div className="empty-state"><h3>Sin tareas elegibles</h3><p>No hay tareas activas para esta fecha en el proyecto seleccionado, así que no podrás guardar el reporte hasta que exista al menos una tarea vigente.</p></div>
         ) : (
           <div className="grid gap-2">
             {eligibleTasks.map((task) => (
@@ -150,6 +164,7 @@ export default function ReportEditor({
             ))}
           </div>
         )}
+        {taskError && <p className="text-sm text-red-600">{taskError}</p>}
       </div>
 
       <div className="space-y-3">
@@ -193,7 +208,7 @@ export default function ReportEditor({
         />
       )}
 
-      <button disabled={saving} className="btn-primary disabled:opacity-60">{saving ? 'Guardando...' : label}</button>
+      <button disabled={saving || eligibleTasks.length === 0} className="btn-primary disabled:opacity-60">{saving ? 'Guardando...' : label}</button>
     </form>
   );
 }
