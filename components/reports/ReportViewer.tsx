@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { renderMarkdownToHtml } from '../../lib/markdown';
+import { parseReportMarkdown } from '../../lib/reportSections';
 
 type RelatedTask = {
   id: string;
@@ -20,8 +20,8 @@ type Props = {
 };
 
 export default function ReportViewer({ markdown, externalLinks = [], links = [], hasEvidence, relatedTasks = [] }: Props) {
-  const html = useMemo(() => renderMarkdownToHtml(markdown || ''), [markdown]);
-  const mergedLinks = useMemo(() => Array.from(new Set([...links, ...externalLinks])).filter(Boolean), [links, externalLinks]);
+  const sections = useMemo(() => parseReportMarkdown(markdown || ''), [markdown]);
+  const mergedLinks = useMemo(() => Array.from(new Set([...links, ...sections.evidencia, ...externalLinks])).filter(Boolean), [links, sections.evidencia, externalLinks]);
   const hasEvidenceState = typeof hasEvidence === 'boolean' ? hasEvidence : mergedLinks.length > 0;
 
   const highlights = [
@@ -49,10 +49,21 @@ export default function ReportViewer({ markdown, externalLinks = [], links = [],
         </section>
       )}
 
-      <div className="report-viewer-shell">
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.85)]">
-          <div className="report-markdown" dangerouslySetInnerHTML={{ __html: html }} />
-        </div>
+      <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.85)] space-y-4">
+          <article className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4">
+            <p className="section-title">Avance</p>
+            <p className="mt-2 text-sm leading-6 text-slate-700">{sections.avance || 'Sin actualizaciones registradas.'}</p>
+          </article>
+          <article className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4">
+            <p className="section-title">Problemas</p>
+            <p className="mt-2 text-sm leading-6 text-slate-700">{sections.problemas || 'Sin bloqueos declarados.'}</p>
+          </article>
+          <article className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4">
+            <p className="section-title">Siguiente paso</p>
+            <p className="mt-2 text-sm leading-6 text-slate-700">{sections.siguientePaso || 'No se definió una siguiente acción.'}</p>
+          </article>
+        </section>
 
         <aside className="evidence-panel">
           <div className="flex items-center justify-between gap-3">

@@ -15,6 +15,7 @@ type MemberDirectory = Record<string, TaskAssignee[]>;
 type Props = {
   currentUserId: string;
   currentUserName: string;
+  currentUserEmail?: string;
   isGodAdmin?: boolean;
   projects: MembershipProject[];
   memberDirectory: MemberDirectory;
@@ -76,7 +77,11 @@ function parseSubtasks(value: string): TaskSubtask[] {
     .map((title, index) => ({ id: `draft-subtask-${index}-${title}`, title, done: false }));
 }
 
-export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin = false, projects, memberDirectory }: Props) {
+function isTaskAssignedToCurrentUser(task: TaskItem, currentUserId: string, currentUserEmail?: string) {
+  return task.assigneeId === currentUserId || (!!currentUserEmail && !!task.assigneeEmail && task.assigneeEmail === currentUserEmail);
+}
+
+export default function TaskBoard({ currentUserId, currentUserName, currentUserEmail, isGodAdmin = false, projects, memberDirectory }: Props) {
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [statusFilter, setStatusFilter] = useState('');
@@ -134,16 +139,17 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
 
   const visibleTasks = useMemo(() => {
     return tasks.filter((task) => {
-      const canSee = isGodAdmin || task.assigneeId === currentUserId || task.mentorOrLeaderIds.includes(currentUserId);
+      const assignedToMe = isTaskAssignedToCurrentUser(task, currentUserId, currentUserEmail);
+      const canSee = isGodAdmin || assignedToMe || task.mentorOrLeaderIds.includes(currentUserId);
       if (!canSee) return false;
-      if (viewMode === 'mine' && task.assigneeId !== currentUserId) return false;
+      if (viewMode === 'mine' && !assignedToMe) return false;
       if (viewMode === 'managed' && !task.mentorOrLeaderIds.includes(currentUserId) && !isGodAdmin) return false;
       if (statusFilter && task.status !== statusFilter) return false;
       if (projectFilter && task.subgroupId !== projectFilter) return false;
       if (memberFilter && task.assigneeId !== memberFilter) return false;
       return true;
     });
-  }, [tasks, currentUserId, isGodAdmin, memberFilter, projectFilter, statusFilter, viewMode]);
+  }, [tasks, currentUserEmail, currentUserId, isGodAdmin, memberFilter, projectFilter, statusFilter, viewMode]);
 
   const reviewableTasks = useMemo(
     () => visibleTasks.filter((task) => isGodAdmin || leaderProjectIds.has(task.subgroupId)),
@@ -197,6 +203,7 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
       assigneeId: assignee.id,
       assigneeName: assignee.fullName,
       assigneeRole: assignee.roleLabel,
+      assigneeEmail: assignee.email,
       mentorOrLeaderIds: Array.from(new Set([...leaderIds, currentUserId])),
       startDate: form.startDate,
       endDate: form.endDate,
@@ -326,8 +333,8 @@ export default function TaskBoard({ currentUserId, currentUserName, isGodAdmin =
               {loading && <p className="text-sm text-slate-500">Cargando tareas...</p>}
               {!loading && visibleTasks.length === 0 && <div className="empty-state"><h3>No hay tareas para este filtro</h3><p>Cambia la vista o asigna nuevas tareas desde la pestaña correspondiente.</p></div>}
               {visibleTasks.map((task) => {
-                const canUpdate = isGodAdmin || task.assigneeId === currentUserId || task.mentorOrLeaderIds.includes(currentUserId);
-                const canManageStructure = isGodAdmin || task.mentorOrLeaderIds.includes(currentUserId);
+                const canUpdate = isGodAdmin || isTaskAssignedToCurrentUser(task, currentUserId, currentUserEmail) || task.mentorOrLeaderIds.includes(currentUserId);
+                const canManageStructure = canUpdate;
                 const isEditing = editingTaskId === task.id && !!editingForm;
                 return (
                   <article key={task.id} className="task-card space-y-4">

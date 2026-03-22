@@ -118,7 +118,7 @@ export default function ReportsPage() {
       .catch(() => setTasks([]));
   }, []);
 
-  const projectTasks = useMemo(() => tasks.filter((task) => task.subgroupId === subgroupId), [subgroupId, tasks]);
+  const projectTasks = useMemo(() => tasks.filter((task) => task.subgroupId === subgroupId && (user?.isGodAdmin || task.assigneeId === user?.id || (!!user?.email && task.assigneeEmail === user.email))), [subgroupId, tasks, user?.email, user?.id, user?.isGodAdmin]);
 
   const reportReviews = useMemo(() => {
     const loaded = loadReportReviews();

@@ -23,6 +23,7 @@ Si fallan o no existen, cae a persistencia local en navegador.
   "subgroupName": "Proyecto X",
   "assigneeId": "user-1",
   "assigneeName": "Ana Pérez",
+  "assigneeEmail": "ana@example.com",
   "assigneeRole": "Miembro",
   "mentorOrLeaderIds": ["leader-1", "mentor-1"],
   "startDate": "2026-03-20",
@@ -71,6 +72,7 @@ Si fallan o no existen, cae a persistencia local en navegador.
   "subgroupName": "Proyecto X",
   "assigneeId": "user-1",
   "assigneeName": "Ana Pérez",
+  "assigneeEmail": "ana@example.com",
   "assigneeRole": "Miembro",
   "mentorOrLeaderIds": ["leader-1", "mentor-1"],
   "startDate": "2026-03-20",
@@ -132,9 +134,25 @@ Esto es importante porque frontend ya deja:
 - `{ "items": [...] }`
 - `[...]`
 
+### Identificación correcta del responsable
+Para que el usuario asignado vea su tarea en frontend, backend debería devolver de forma consistente al menos uno de estos campos:
+
+- `assigneeId`
+- `assignee.id`
+- `assignedToId`
+- `assignedTo.id`
+- `responsibleId`
+- `responsible.id`
+
+Y preferiblemente también:
+
+- `assigneeEmail` o `assignee.email`
+
+Esto ayuda a que el frontend resuelva correctamente la visibilidad aunque cambie el shape del objeto responsable.
+
 ## 5. Asociar reportes a tareas
 
-El frontend ya deja seleccionar tareas al crear o editar un reporte, **pero solo muestra tareas cuyo rango cubre la fecha del reporte**.
+El frontend ya deja seleccionar tareas al crear o editar un reporte, **pero solo muestra tareas cuyo rango cubre la fecha del reporte y que además estén asignadas al usuario que crea/edita el reporte**. Los administradores pueden ver todas.
 
 ### Regla funcional
 Una tarea es elegible si:

@@ -72,6 +72,7 @@ export default function TasksPage() {
         members.map((member) => ({
           id: member.user.id,
           fullName: member.user.fullName,
+          email: member.user.email,
           roleLabel: member.roles.map((role) => GROUP_ROLE_LABELS[role]).join(' / ') || 'Sin rol',
         })),
       ]),
@@ -89,7 +90,7 @@ export default function TasksPage() {
       {error && <div className="card"><p className="text-sm text-red-600">{error}</p></div>}
 
       {!loading && !error && user && (
-        <TaskBoard currentUserId={user.id} currentUserName={user.fullName} isGodAdmin={user.isGodAdmin} projects={projects} memberDirectory={memberDirectory} />
+        <TaskBoard currentUserId={user.id} currentUserName={user.fullName} currentUserEmail={user.email} isGodAdmin={user.isGodAdmin} projects={projects} memberDirectory={memberDirectory} />
       )}
     </div>
   );

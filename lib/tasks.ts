@@ -8,6 +8,7 @@ export interface TaskAssignee {
   id: string;
   fullName: string;
   roleLabel: string;
+  email?: string;
 }
 
 export interface TaskSubtask {
@@ -24,6 +25,7 @@ export interface TaskItem {
   subgroupName: string;
   assigneeId: string;
   assigneeName: string;
+  assigneeEmail?: string;
   assigneeRole: string;
   mentorOrLeaderIds: string[];
   startDate: string;
@@ -53,6 +55,7 @@ export interface TaskMutationInput {
   subgroupName?: string;
   assigneeId?: string;
   assigneeName?: string;
+  assigneeEmail?: string;
   assigneeRole?: string;
   mentorOrLeaderIds?: string[];
   startDate?: string;
@@ -143,8 +146,9 @@ function normalizeTaskFromBackend(raw: any): TaskItem {
     description: String(raw?.description || raw?.details || '').trim(),
     subgroupId: normalizeComparableId(raw?.subgroupId || raw?.subgroup?.id || raw?.projectId || ''),
     subgroupName: String(raw?.subgroupName || raw?.subgroup?.name || raw?.subgroup?.code || raw?.projectName || '').trim(),
-    assigneeId: normalizeComparableId(raw?.assigneeId || raw?.assignee?.id || raw?.userId || ''),
-    assigneeName: String(raw?.assigneeName || raw?.assignee?.fullName || raw?.user?.fullName || '').trim(),
+    assigneeId: normalizeComparableId(raw?.assigneeId || raw?.assignee?.id || raw?.assignedToId || raw?.assignedTo?.id || raw?.responsibleId || raw?.responsible?.id || raw?.userId || ''),
+    assigneeName: String(raw?.assigneeName || raw?.assignee?.fullName || raw?.assignedTo?.fullName || raw?.responsible?.fullName || raw?.user?.fullName || '').trim(),
+    assigneeEmail: String(raw?.assigneeEmail || raw?.assignee?.email || raw?.assignedTo?.email || raw?.responsible?.email || raw?.user?.email || '').trim(),
     assigneeRole: String(raw?.assigneeRole || raw?.assignee?.roleLabel || raw?.roleLabel || '').trim(),
     mentorOrLeaderIds: Array.isArray(raw?.mentorOrLeaderIds)
       ? raw.mentorOrLeaderIds.map((item: unknown) => normalizeComparableId(item)).filter(Boolean)
