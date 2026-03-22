@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { commentsApi } from '../../lib/api';
+import { commentsApi, reportsApi } from '../../lib/api';
 import { formatPeruDateTime } from '../../lib/datetime';
 
 type CommentItem = {
@@ -46,6 +46,45 @@ function seedFromInitialComment(reportId: string, initialComment?: string | null
   ];
 }
 
+function normalizeComments(rawComments: any[], reportId: string): CommentItem[] {
+  return rawComments
+    .filter(Boolean)
+    .map((comment: any, index: number) => ({
+      id: comment.id || `comment-${index}`,
+      reportId: comment.reportId || reportId,
+      userId: comment.userId || comment.user?.id || comment.authorId || 'unknown',
+      authorName: comment.user?.fullName || comment.authorName || comment.author?.fullName || 'Usuario',
+      content: comment.content || comment.text || comment.body || '',
+      createdAt: comment.createdAt || comment.date || new Date().toISOString(),
+      editedAt: comment.editedAt,
+    }))
+    .filter((comment) => comment.content.trim().length > 0);
+}
+
+function extractCommentsFromReportPayload(payload: any, reportId: string, initialComment?: string | null): CommentItem[] {
+  const possibleArrays = [
+    payload?.comments,
+    payload?.data,
+    payload?.report?.comments,
+    payload?.report?.commentList,
+    payload?.report?.commentsList,
+    payload?.report?.thread,
+    payload?.report?.conversation,
+  ].filter(Array.isArray) as any[];
+
+  for (const candidate of possibleArrays) {
+    const normalized = normalizeComments(candidate, reportId);
+    if (normalized.length > 0) return normalized;
+  }
+
+  const possibleString =
+    (typeof payload?.report?.comments === 'string' && payload.report.comments) ||
+    (typeof payload?.comments === 'string' && payload.comments) ||
+    initialComment;
+
+  return seedFromInitialComment(reportId, possibleString);
+}
+
 export default function CommentSection({ reportId, currentUserId = 'me', currentUserName = 'Tú', initialComment }: Props) {
   const [draft, setDraft] = useState('');
   const [editingId, setEditingId] = useState('');
@@ -59,32 +98,38 @@ export default function CommentSection({ reportId, currentUserId = 'me', current
     const load = async () => {
       setLoading(true);
       setWarning('');
+
       try {
         const res = await commentsApi.listByReport(reportId);
         const raw = res.data?.comments || res.data?.data || [];
-        const normalized = raw.map((comment: any) => ({
-          id: comment.id,
-          reportId: comment.reportId || reportId,
-          userId: comment.userId || comment.user?.id || 'unknown',
-          authorName: comment.user?.fullName || comment.authorName || 'Usuario',
-          content: comment.content,
-          createdAt: comment.createdAt,
-          editedAt: comment.editedAt,
-        }));
+        const normalized = normalizeComments(Array.isArray(raw) ? raw : [], reportId);
+        if (normalized.length > 0) {
+          if (!mounted) return;
+          setItems(normalized);
+          localStorage.setItem(keyOf(reportId), JSON.stringify(normalized));
+          setLoading(false);
+          return;
+        }
+      } catch {
+        // fallback below
+      }
+
+      try {
+        const res = await reportsApi.getOne(reportId);
+        const fallbackFromReport = extractCommentsFromReportPayload(res.data, reportId, initialComment);
         if (!mounted) return;
-        const next = normalized.length > 0 ? normalized : seedFromInitialComment(reportId, initialComment);
-        setItems(next);
-        localStorage.setItem(keyOf(reportId), JSON.stringify(next));
+        setItems(fallbackFromReport);
+        localStorage.setItem(keyOf(reportId), JSON.stringify(fallbackFromReport));
       } catch {
         if (!mounted) return;
         const raw = localStorage.getItem(keyOf(reportId));
         const stored = raw ? (JSON.parse(raw) as CommentItem[]) : [];
         setItems(stored.length > 0 ? stored : seedFromInitialComment(reportId, initialComment));
-        setWarning('No se pudo cargar la lista pública de comentarios desde backend. Se mostró el caché local.');
       } finally {
         if (mounted) setLoading(false);
       }
     };
+
     void load();
     return () => {
       mounted = false;
